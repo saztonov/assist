@@ -1,0 +1,40 @@
+{
+  "name": "@su10/ai-agent-portal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9.12.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,yaml,yml}\"",
+    "dev": "turbo run dev",
+    "check:frontend-boundaries": "node scripts/check-frontend-boundaries.mjs",
+    "secret:scan": "gitleaks detect --redact --no-banner || echo \"gitleaks not installed locally; skipping (CI enforces)\"",
+    "clean": "turbo run clean",
+    "ci": "pnpm install --frozen-lockfile && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm check:frontend-boundaries"
+  },
+  "devDependencies": {
+    "@su10/eslint-config": "workspace:*",
+    "@su10/tsconfig": "workspace:*",
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}

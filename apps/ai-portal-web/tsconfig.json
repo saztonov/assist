@@ -1,0 +1,9 @@
+{
+  "extends": "@su10/tsconfig/react.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "noEmit": true
+  },
+  "include": ["src"],
+  "exclude": ["dist", "**/*.test.ts", "**/*.test.tsx"]
+}

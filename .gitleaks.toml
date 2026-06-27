@@ -1,0 +1,20 @@
+# gitleaks config for the AI/Agent Portal monorepo.
+# Extends the built-in default ruleset; adds an allowlist for documented
+# placeholders so the secret scan stays green on the scaffold.
+title = "su10-ai-agent-portal"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and docs are expected to contain non-secret examples."
+paths = [
+  '''\.env\.example$''',
+  '''(^|/)docs/''',
+  '''(^|/)README\.md$''',
+]
+regexes = [
+  '''__FROM_LOCKBOX__''',
+  '''changeme''',
+  '''placeholder''',
+]

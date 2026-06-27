@@ -1,0 +1,39 @@
+{
+  "name": "@su10/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@su10/config": "workspace:*",
+    "@su10/logger": "workspace:*",
+    "@su10/errors": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@su10/tsconfig": "workspace:*",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "rimraf": "catalog:",
+    "drizzle-kit": "catalog:",
+    "@types/pg": "catalog:"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@su10/agent-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@su10/errors": "workspace:*",
+    "@su10/fastify-security": "workspace:*",
+    "@su10/workflow-schema": "workspace:*",
+    "fastify": "catalog:"
+  },
+  "devDependencies": {
+    "@su10/tsconfig": "workspace:*",
+    "rimraf": "catalog:",
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,27 @@
+# Placeholder / orientation only — NOT production-ready.
+# Real images are immutable tags built by the deploy runner; secrets come from
+# Yandex Lockbox (injected as env/docker secrets), never from this file.
+services:
+  agent-api:
+    image: registry.example/su10/agent-api:CHANGE_ME
+    env_file: ../.env # placeholder: real deploys inject secrets, do not commit .env
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+
+  temporal-worker:
+    image: registry.example/su10/temporal-worker:CHANGE_ME
+    env_file: ../.env
+    restart: unless-stopped
+
+  agent-worker:
+    image: registry.example/su10/agent-worker:CHANGE_ME
+    env_file: ../.env
+    restart: unless-stopped
+
+  document-worker:
+    image: registry.example/su10/document-worker:CHANGE_ME
+    env_file: ../.env
+    restart: unless-stopped
+# nginx, Keycloak and Managed PostgreSQL are separate infrastructure services
+# (own compose projects / managed cloud resources), not part of this file.
