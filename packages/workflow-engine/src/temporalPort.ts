@@ -19,9 +19,20 @@ export interface StartAgentTaskWorkflowArgs {
   requireApproval?: boolean;
 }
 
+export interface StartDocumentProcessingArgs {
+  documentId: string;
+  documentVersionId: string;
+  taskQueue: string;
+  subject?: { id: string; roles: string[] };
+}
+
 export interface TemporalPort {
   /** Запускает workflow задачи; возвращает Temporal `workflow_id`. */
   startAgentTaskWorkflow(args: StartAgentTaskWorkflowArgs): Promise<{ workflowId: string }>;
   /** Сигнал отмены по `workflow_id` (best-effort оркестрация). */
   signalCancel(workflowId: string): Promise<void>;
+  /** Запускает workflow обработки документа (этап 9 / M6); возвращает `workflow_id`. */
+  startDocumentProcessingWorkflow(
+    args: StartDocumentProcessingArgs,
+  ): Promise<{ workflowId: string }>;
 }

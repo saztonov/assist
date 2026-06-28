@@ -10,6 +10,7 @@ import type { AgentApiConfig } from './config.js';
 import { ROUTE_GROUPS } from './routes/index.js';
 import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
 import type { HealthCheck } from './plugins/health.js';
+import { testServerConfig } from './test-support/serverConfig.js';
 
 function makeToolDeps() {
   const toolRegistry = new ToolRegistry();
@@ -24,20 +25,7 @@ const AUD = 'agent-api';
 
 function makeConfig(devJwks: string): AgentApiConfig {
   return {
-    server: {
-      NODE_ENV: 'test',
-      HTTP_HOST: '0.0.0.0',
-      HTTP_PORT: 8080,
-      DATABASE_URL: 'postgres://placeholder/db',
-      DATABASE_POOL_MAX: 10,
-      TEMPORAL_ADDRESS: 'localhost:7233',
-      TEMPORAL_NAMESPACE: 'default',
-      TEMPORAL_TASK_QUEUE: 'ai-portal',
-      LLM_STUDIO_BASE_URL: 'http://localhost:1234/v1',
-      LLM_STUDIO_API_TOKEN: 'placeholder',
-      RAG_ACL_ENFORCE: true,
-      LOG_LEVEL: 'info',
-    },
+    server: testServerConfig({ LOG_LEVEL: 'info' }),
     apiPrefix: '/api/v1',
     trustProxy: false,
     bodyLimit: 1_048_576,

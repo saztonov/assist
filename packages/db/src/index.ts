@@ -45,6 +45,9 @@ export * from './schema/rag.js';
 export * from './contracts/providers.js';
 export * from './contracts/seed.js';
 
+// Резолвер secret_ref → значение (env/Lockbox); секреты не в БД (fail-closed).
+export * from './secretResolver.js';
+
 // Жизненный цикл AgentTask: чистый статус-автомат, репозиторий (+in-memory),
 // DB-backed audit sink. Смена статуса — только через `transitionStatus`.
 export * from './domain/agentTaskStatus.js';
@@ -56,7 +59,12 @@ export * from './repo/outboxRepo.js';
 export * from './repo/toolRepo.js';
 export * from './repo/agentRunRepo.js';
 export * from './repo/agentRunRepo.memory.js';
+export * from './repo/documentRepo.js';
+export * from './repo/ragChunkRepo.js';
+export * from './repo/ragQueryRepo.js';
+export * from './repo/providerRepo.js';
 export * from './audit/dbAuditSink.js';
+export * from './audit/llmCallSink.js';
 
 /**
  * Реляционная карта PUBLIC-схемы для `drizzle()`. Таблицы схемы `rag` сюда НЕ

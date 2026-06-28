@@ -7,10 +7,23 @@ import {
   createAgentTaskRepo,
   createDb,
   createDbAuditSink,
+  createDbLlmCallRecorder,
+  createDocumentRepo,
+  createProviderRepo,
+  createRagQueryRepo,
   closeDb,
   pingDatabase,
   type Database,
 } from '@su10/db';
+import { createS3Client, createS3DocumentStorage } from '@su10/s3';
+import {
+  createLlmGateway,
+  createMockEmbeddingProvider,
+  type EmbeddingProvider,
+  type LlmGatewayService,
+} from '@su10/llm';
+import { createPgRagRepository, createRagService, ragSearchTool } from '@su10/rag';
+import type { AuditSink } from '@su10/audit';
 import { createLogger, type Logger } from '@su10/logger';
 import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
 import { ToolBroker, ToolRegistry } from '@su10/tools';
@@ -21,6 +34,7 @@ import {
 } from '@su10/tool-base';
 import type { TemporalPort } from '@su10/workflow-engine';
 import { buildApp } from './app.js';
+import type { DocumentsDeps, DocumentProcessingPort } from './documents/routes.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
 import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
 import { createTemporalClientPort } from './temporal/temporalClientPort.js';
@@ -60,6 +74,51 @@ function buildHealthChecks(config: AgentApiConfig, db: Database): HealthCheck[] 
 }
 
 /**
+ * Documents API deps — только при `DOCUMENTS_ENABLED` и наличии S3-настроек.
+ * Конструктор S3-клиента не выполняет сетевой I/O. Presigned URL не логируются.
+ */
+function buildDocumentsDeps(
+  config: AgentApiConfig,
+  db: Database,
+  auditSink: AuditSink,
+  temporal: TemporalPort,
+): DocumentsDeps | undefined {
+  const s = config.server;
+  if (
+    !s.DOCUMENTS_ENABLED ||
+    !s.S3_ENDPOINT ||
+    !s.S3_REGION ||
+    !s.S3_BUCKET ||
+    !s.S3_ACCESS_KEY_ID ||
+    !s.S3_SECRET_ACCESS_KEY
+  ) {
+    return undefined;
+  }
+  const client = createS3Client({
+    endpoint: s.S3_ENDPOINT,
+    region: s.S3_REGION,
+    accessKeyId: s.S3_ACCESS_KEY_ID,
+    secretAccessKey: s.S3_SECRET_ACCESS_KEY,
+    forcePathStyle: s.S3_FORCE_PATH_STYLE,
+  });
+  const storage = createS3DocumentStorage(client, {
+    bucket: s.S3_BUCKET,
+    presignExpirySeconds: s.S3_PRESIGN_EXPIRY_SECONDS,
+  });
+  // Долгая обработка документа исполняется через Temporal workflow (этап 9 / M6).
+  const documentProcessing: DocumentProcessingPort = {
+    start: (input) =>
+      temporal.startDocumentProcessingWorkflow({
+        documentId: input.documentId,
+        documentVersionId: input.documentVersionId,
+        taskQueue: s.TEMPORAL_TASK_QUEUE,
+        subject: input.subject,
+      }),
+  };
+  return { documentRepo: createDocumentRepo(db), storage, auditSink, documentProcessing };
+}
+
+/**
  * Temporal-порт: при `TEMPORAL_ENABLED=true` — реальный `@temporalio/client`
  * (I/O вне `buildApp`); иначе local-first stub. Реальный порт умеет `close()`.
  */
@@ -92,6 +151,48 @@ async function main(): Promise<void> {
   const toolTestBroker = new ToolBroker(sandboxRegistry);
 
   const temporal = await buildTemporalPort(config);
+  const auditSink = createDbAuditSink(db);
+  const documents = buildDocumentsDeps(config, db, auditSink, temporal);
+
+  // LLM gateway (единственный путь к LM Studio) + RAG-сервис. Embedding-провайдер
+  // отделён от chat/vision: `mock` локально, prod-провайдер — отдельной policy.
+  const embeddingProvider: EmbeddingProvider | undefined =
+    config.server.EMBEDDING_PROVIDER === 'mock'
+      ? createMockEmbeddingProvider({ dim: config.server.EMBEDDING_DIM as 768 | 1536 })
+      : undefined;
+  const llmGateway: LlmGatewayService = createLlmGateway(
+    {
+      baseUrl: config.server.LLM_STUDIO_BASE_URL,
+      token: config.server.LLM_STUDIO_API_TOKEN,
+      models: {
+        chandra: config.server.CHANDRA_MODEL,
+        lift: config.server.LIFT_MODEL,
+        qwen: config.server.QWEN_MODEL,
+      },
+      defaults: {
+        chat: config.server.LLM_DEFAULT_CHAT_MODEL,
+        ocr: config.server.LLM_DEFAULT_OCR_MODEL,
+        extraction: config.server.LLM_DEFAULT_EXTRACTION_MODEL,
+      },
+      concurrency: {
+        chandra: config.server.LLM_MAX_PARALLEL_CHANDRA,
+        lift: config.server.LLM_MAX_PARALLEL_LIFT,
+        qwen: config.server.LLM_MAX_PARALLEL_QWEN,
+      },
+      timeoutMs: config.server.LLM_TIMEOUT_MS_DEFAULT,
+      maxRetries: config.server.LLM_MAX_RETRIES,
+    },
+    { recorder: createDbLlmCallRecorder(db), ...(embeddingProvider ? { embeddingProvider } : {}) },
+  );
+
+  const ragService = createRagService({
+    repository: createPgRagRepository(db, { embeddingDim: config.server.EMBEDDING_DIM as 768 | 1536 }),
+    embedder: { embed: (texts) => llmGateway.embeddings(texts).then((r) => r.vectors) },
+    queryLog: createRagQueryRepo(db),
+    backend: 'pgvector',
+  });
+  // `rag.search` tool shares the SAME ragService as `/rag/search` (one ACL path).
+  toolRegistry.register(ragSearchTool({ ragService }));
 
   const app = await buildApp({
     config,
@@ -100,9 +201,12 @@ async function main(): Promise<void> {
     healthChecks: buildHealthChecks(config, db),
     taskRepo: createAgentTaskRepo(db),
     temporal,
-    auditSink: createDbAuditSink(db),
+    auditSink,
     toolRegistry,
     toolTestBroker,
+    ...(documents ? { documents } : {}),
+    rag: { ragService, llm: llmGateway, auditSink },
+    llmAdmin: { providerRepo: createProviderRepo(db), llm: llmGateway, auditSink },
   });
 
   let closing = false;

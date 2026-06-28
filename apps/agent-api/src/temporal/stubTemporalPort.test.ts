@@ -27,4 +27,22 @@ describe('stubTemporalPort', () => {
     const p = createStubTemporalPort({ failCancel: true });
     await expect(p.signalCancel('wf')).rejects.toBeInstanceOf(UpstreamError);
   });
+
+  it('startDocumentProcessingWorkflow возвращает детерминированный workflowId', async () => {
+    const p = createStubTemporalPort();
+    const r = await p.startDocumentProcessingWorkflow({
+      documentId: 'doc-1',
+      documentVersionId: 'ver-1',
+      taskQueue: 'q',
+    });
+    expect(r.workflowId).toBe('document-doc-1');
+    expect(p.started.has('document-doc-1')).toBe(true);
+  });
+
+  it('failDocStart → UpstreamError', async () => {
+    const p = createStubTemporalPort({ failDocStart: true });
+    await expect(
+      p.startDocumentProcessingWorkflow({ documentId: 'd', documentVersionId: 'v', taskQueue: 'q' }),
+    ).rejects.toBeInstanceOf(UpstreamError);
+  });
 });

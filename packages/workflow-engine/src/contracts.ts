@@ -35,6 +35,14 @@ export const VisualTemplateInputSchema = z.object({
 });
 export type VisualTemplateInput = z.infer<typeof VisualTemplateInputSchema>;
 
+/** Вход document_processing_workflow — только ids/refs субъекта (НЕТ сырья/секретов). */
+export const DocumentProcessingInputSchema = z.object({
+  documentId: z.string().min(1),
+  documentVersionId: z.string().min(1),
+  subject: WorkflowSubjectSchema,
+});
+export type DocumentProcessingInput = z.infer<typeof DocumentProcessingInputSchema>;
+
 // Сигналы и retry/timeout-конфиг живут в constants.ts (lean-бандл workflow).
 export {
   APPROVAL_DECISION_SIGNAL,

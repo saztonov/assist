@@ -109,4 +109,26 @@ export interface AgentTaskActivities {
   notifyUser(input: NotifyUserInput): Promise<NotifyUserResult>;
 }
 
-export type Activities = AgentTaskActivities;
+// ── Document processing activity (этап 9 / M6) ───────────────────────────────
+
+/** Вход activity обработки документа (ids/refs, без сырья). */
+export interface ProcessDocumentInput {
+  documentId: string;
+  documentVersionId: string;
+  subjectId: string;
+  roles: string[];
+}
+
+export interface ProcessDocumentResult {
+  documentId: string;
+  status: 'indexed' | 'failed';
+  chunkCount: number;
+  errorCode?: string;
+}
+
+/** Activity, исполняющая document-worker pipeline (parse→OCR→chunk→embed→store). */
+export interface DocumentProcessingActivities {
+  processDocument(input: ProcessDocumentInput): Promise<ProcessDocumentResult>;
+}
+
+export type Activities = AgentTaskActivities & DocumentProcessingActivities;

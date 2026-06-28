@@ -8,9 +8,11 @@
  */
 import { UpstreamError } from '@su10/errors';
 import {
+  DocumentProcessingInputSchema,
   GenericAgentTaskInputSchema,
   CANCEL_SIGNAL,
   type StartAgentTaskWorkflowArgs,
+  type StartDocumentProcessingArgs,
   type TemporalPort,
 } from '@su10/workflow-engine';
 
@@ -60,6 +62,25 @@ export async function createTemporalClientPort(
         await client.workflow.getHandle(workflowId).signal(CANCEL_SIGNAL);
       } catch {
         throw new UpstreamError('failed to signal workflow cancel');
+      }
+    },
+
+    async startDocumentProcessingWorkflow(args: StartDocumentProcessingArgs) {
+      const workflowId = `document-${args.documentId}`;
+      const input = DocumentProcessingInputSchema.parse({
+        documentId: args.documentId,
+        documentVersionId: args.documentVersionId,
+        subject: args.subject ?? { id: 'system', roles: [] },
+      });
+      try {
+        const handle = await client.workflow.start('document_processing_workflow', {
+          taskQueue: args.taskQueue,
+          workflowId,
+          args: [input],
+        });
+        return { workflowId: handle.workflowId };
+      } catch {
+        throw new UpstreamError('failed to start document processing workflow');
       }
     },
 

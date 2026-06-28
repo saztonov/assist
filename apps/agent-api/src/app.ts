@@ -25,6 +25,9 @@ import type { AgentApiConfig } from './config.js';
 import { healthPlugin, type HealthCheck } from './plugins/health.js';
 import { openapiPlugin } from './plugins/openapi.js';
 import { routes } from './routes/index.js';
+import type { DocumentsDeps } from './documents/routes.js';
+import type { RagDeps } from './rag/routes.js';
+import type { LlmAdminDeps } from './llm/routes.js';
 
 export interface BuildAppDeps {
   config: AgentApiConfig;
@@ -43,6 +46,12 @@ export interface BuildAppDeps {
   toolRegistry: ToolRegistry;
   /** Sandbox-брокер для admin test harness (без реальных сайд-эффектов). */
   toolTestBroker: ToolBroker;
+  /** Documents API deps (repo + S3 storage port). Registered only when present. */
+  documents?: DocumentsDeps;
+  /** RAG API deps (ragService + llm gateway). Registered only when present. */
+  rag?: RagDeps;
+  /** LLM admin API deps (provider registry + gateway). Registered only when present. */
+  llmAdmin?: LlmAdminDeps;
 }
 
 export async function buildApp(deps: BuildAppDeps) {
@@ -90,6 +99,9 @@ export async function buildApp(deps: BuildAppDeps) {
         taskQueue: config.server.TEMPORAL_TASK_QUEUE,
         toolRegistry: deps.toolRegistry,
         toolTestBroker: deps.toolTestBroker,
+        ...(deps.documents ? { documents: deps.documents } : {}),
+        ...(deps.rag ? { rag: deps.rag } : {}),
+        ...(deps.llmAdmin ? { llmAdmin: deps.llmAdmin } : {}),
       });
     },
     { prefix: config.apiPrefix },

@@ -11,6 +11,8 @@ export interface StubTemporalPortOptions {
   failStart?: boolean;
   /** Если true — `signalCancel` бросает (путь cancel-failure). */
   failCancel?: boolean;
+  /** Если true — `startDocumentProcessingWorkflow` бросает (путь failed). */
+  failDocStart?: boolean;
 }
 
 export interface StubTemporalPort extends TemporalPort {
@@ -33,6 +35,12 @@ export function createStubTemporalPort(opts: StubTemporalPortOptions = {}): Stub
     async signalCancel(workflowId) {
       if (opts.failCancel) throw new UpstreamError('temporal signal failed (stub)');
       cancelled.add(workflowId);
+    },
+    async startDocumentProcessingWorkflow({ documentId }) {
+      if (opts.failDocStart) throw new UpstreamError('temporal unavailable (stub)');
+      const workflowId = `document-${documentId}`;
+      started.add(workflowId);
+      return { workflowId };
     },
   };
 }

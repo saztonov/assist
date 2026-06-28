@@ -25,6 +25,7 @@
     "@su10/s3": "workspace:*",
     "@su10/db": "workspace:*",
     "@su10/rag": "workspace:*",
+    "@su10/llm": "workspace:*",
     "@su10/connectors": "workspace:*",
     "@su10/config": "workspace:*",
     "@su10/logger": "workspace:*",

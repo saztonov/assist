@@ -23,6 +23,7 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
+    setupFiles: ['./vitest.setup.ts'],
     include: [
       'packages/**/src/**/*.test.{ts,tsx}',
       'apps/**/src/**/*.test.{ts,tsx}',

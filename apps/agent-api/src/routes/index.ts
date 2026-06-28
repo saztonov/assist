@@ -9,6 +9,9 @@ import type { FastifyPluginAsync } from 'fastify';
 import { NotImplementedError } from '@su10/errors';
 import { agentTasksRoutes, type AgentTasksDeps } from '../agent-tasks/routes.js';
 import { toolsRoutes, type ToolsRoutesDeps } from './tools.js';
+import { documentsRoutes, type DocumentsDeps } from '../documents/routes.js';
+import { ragRoutes, type RagDeps } from '../rag/routes.js';
+import { llmAdminRoutes, type LlmAdminDeps } from '../llm/routes.js';
 
 export interface RouteGroup {
   prefix: string;
@@ -16,9 +19,17 @@ export interface RouteGroup {
 }
 
 /** Зависимости реальных групп роутов (инжектируются из server.ts через buildApp). */
-export type RouteDeps = AgentTasksDeps & ToolsRoutesDeps;
+export type RouteDeps = AgentTasksDeps &
+  ToolsRoutesDeps & {
+    /** Documents API — registered only when documents/S3 are configured. */
+    documents?: DocumentsDeps;
+    /** RAG API — registered only when the RAG service is wired. */
+    rag?: RagDeps;
+    /** LLM admin API — registered only when the provider registry is wired. */
+    llmAdmin?: LlmAdminDeps;
+  };
 
-const IMPLEMENTED_PREFIXES = new Set(['/agent/tasks', '/tools']);
+const BASE_IMPLEMENTED_PREFIXES = ['/agent/tasks', '/tools'] as const;
 
 export const ROUTE_GROUPS: readonly RouteGroup[] = [
   { prefix: '/agent/tasks', tag: 'agent-tasks' },
@@ -34,13 +45,32 @@ export const ROUTE_GROUPS: readonly RouteGroup[] = [
 ];
 
 export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
+  const implemented = new Set<string>(BASE_IMPLEMENTED_PREFIXES);
+
   // Реализованные группы: AgentTask lifecycle (этап 4) + Tool Registry (этап 5).
   await app.register(agentTasksRoutes, deps);
   await app.register(toolsRoutes, deps);
 
+  // Documents API (этап 9 / M2) — только если сконфигурированы S3/документы.
+  if (deps.documents) {
+    await app.register(documentsRoutes, deps.documents);
+    implemented.add('/documents');
+  }
+
+  // RAG API (этап 9 / M4) — только если сконфигурирован RAG-сервис.
+  if (deps.rag) {
+    await app.register(ragRoutes, deps.rag);
+    implemented.add('/rag');
+  }
+
+  // LLM admin API (этап 8 / M7) — только если сконфигурирован реестр провайдеров.
+  if (deps.llmAdmin) {
+    await app.register(llmAdminRoutes, deps.llmAdmin);
+  }
+
   // Остальные группы — представительные 501-заглушки (заменяются в след. этапах).
   for (const group of ROUTE_GROUPS) {
-    if (IMPLEMENTED_PREFIXES.has(group.prefix)) continue;
+    if (implemented.has(group.prefix)) continue;
     await app.register(async (g) => {
       g.get(
         group.prefix,

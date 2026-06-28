@@ -236,6 +236,12 @@ importers:
       '@su10/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
+      '@su10/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
+      '@su10/s3':
+        specifier: workspace:*
+        version: link:../../packages/s3
       '@su10/tool-base':
         specifier: workspace:*
         version: link:../../packages/tool-base
@@ -577,6 +583,9 @@ importers:
       '@su10/logger':
         specifier: workspace:*
         version: link:../logger
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@su10/tsconfig':
         specifier: workspace:*
@@ -773,6 +782,12 @@ importers:
       '@su10/s3':
         specifier: workspace:*
         version: link:../s3
+      '@su10/tools':
+        specifier: workspace:*
+        version: link:../tools
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.38.4(@types/pg@8.20.0)(@types/react@18.3.31)(pg@8.22.0)(react@18.3.1)
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1055,6 +1070,9 @@ importers:
       '@su10/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@su10/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@su10/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -1092,12 +1110,21 @@ importers:
       '@su10/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@su10/document-worker':
+        specifier: workspace:*
+        version: link:../document-worker
       '@su10/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@su10/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@su10/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@su10/s3':
+        specifier: workspace:*
+        version: link:../../packages/s3
       '@su10/tool-base':
         specifier: workspace:*
         version: link:../../packages/tool-base

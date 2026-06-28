@@ -22,6 +22,8 @@
     "@su10/logger": "workspace:*",
     "@su10/oidc": "workspace:*",
     "@su10/permissions": "workspace:*",
+    "@su10/rag": "workspace:*",
+    "@su10/s3": "workspace:*",
     "@su10/tools": "workspace:*",
     "@su10/tool-base": "workspace:*",
     "@su10/workflow-engine": "workspace:*",

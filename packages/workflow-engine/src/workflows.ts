@@ -8,7 +8,11 @@
  * worker (`workflowsPath`), чтобы consumers (agent-api) не тянули @temporalio/workflow.
  */
 import { proxyActivities, defineSignal, setHandler, condition } from '@temporalio/workflow';
-import type { AgentTaskActivities } from './activities.js';
+import type {
+  AgentTaskActivities,
+  DocumentProcessingActivities,
+  ProcessDocumentResult,
+} from './activities.js';
 import {
   ACTIVITY_RETRY,
   ACTIVITY_TIMEOUTS,
@@ -22,7 +26,11 @@ import {
   type AgentTaskOutcome,
   type OrchestrationEnv,
 } from './orchestration.js';
-import type { GenericAgentTaskInput, VisualTemplateInput } from './contracts.js';
+import type {
+  DocumentProcessingInput,
+  GenericAgentTaskInput,
+  VisualTemplateInput,
+} from './contracts.js';
 
 const retry = {
   initialInterval: ACTIVITY_RETRY.initialIntervalMs,
@@ -92,4 +100,23 @@ export async function visual_template_generic_workflow(
   input: VisualTemplateInput,
 ): Promise<AgentTaskOutcome> {
   return runVisualTemplate(input, buildWorkflowEnv());
+}
+
+const documentAct = proxyActivities<DocumentProcessingActivities>({
+  startToCloseTimeout: ACTIVITY_TIMEOUTS.agentStartToCloseMs,
+  retry,
+});
+
+/** Долгая обработка документа исполняется через Temporal (этап 9 / M6). Тонкий
+ *  workflow: один activity-вызов pipeline (parse→OCR→chunk→embed→store). Статус
+ *  документа выставляет сама activity (источник истины — `documents.status`). */
+export async function document_processing_workflow(
+  input: DocumentProcessingInput,
+): Promise<ProcessDocumentResult> {
+  return documentAct.processDocument({
+    documentId: input.documentId,
+    documentVersionId: input.documentVersionId,
+    subjectId: input.subject.id,
+    roles: input.subject.roles,
+  });
 }

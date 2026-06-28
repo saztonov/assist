@@ -6,6 +6,15 @@ import type { Subject } from '@su10/permissions';
 
 // Контракт RAG-запроса (ACL-before-retrieval, fail-closed).
 export * from './ragQuery.js';
+// RAG core (этап 9 / M3): chunker, ACL-предикат, repository, RRF, rerank, service.
+export * from './chunker.js';
+export * from './aclPredicate.js';
+export * from './ragRepository.js';
+export * from './ragRepository.pg.js';
+export * from './fusionRrf.js';
+export * from './rerank.js';
+export * from './ragService.js';
+export * from './ragTool.js';
 
 export interface RagDocument {
   id: string;
