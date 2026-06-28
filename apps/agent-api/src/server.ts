@@ -3,11 +3,27 @@
  * gracefully on SIGTERM/SIGINT. Local-first: OIDC uses an injected dev JWKS when
  * OIDC_DEV_JWKS is set, so protected routes work without a live Keycloak.
  */
-import { createDb, pingDatabase } from '@su10/db';
+import {
+  createAgentTaskRepo,
+  createDb,
+  createDbAuditSink,
+  closeDb,
+  pingDatabase,
+  type Database,
+} from '@su10/db';
 import { createLogger, type Logger } from '@su10/logger';
 import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
+import { NotImplementedError } from '@su10/errors';
+import { ToolBroker, ToolRegistry } from '@su10/tools';
+import {
+  createDbBaseToolDeps,
+  createInMemoryBaseToolDeps,
+  registerBaseTools,
+} from '@su10/tool-base';
+import type { TemporalPort } from '@su10/workflow-engine';
 import { buildApp } from './app.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
+import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
 import {
   dbHealthCheck,
   jwksHealthCheck,
@@ -29,7 +45,7 @@ function buildOidcVerifier(config: AgentApiConfig): OidcVerifier {
   return createOidc({ ...base, jwksUri: config.oidc.jwksUri });
 }
 
-function buildHealthChecks(config: AgentApiConfig): HealthCheck[] {
+function buildHealthChecks(config: AgentApiConfig, db: Database): HealthCheck[] {
   const checks: HealthCheck[] = [];
   if (config.oidc.jwksUri) checks.push(jwksHealthCheck(config.oidc.jwksUri));
   if (config.readiness.llmEnabled) {
@@ -38,21 +54,48 @@ function buildHealthChecks(config: AgentApiConfig): HealthCheck[] {
     );
   }
   if (config.readiness.dbEnabled) {
-    // Pool создаётся здесь (I/O-точка), не в buildApp. По умолчанию выключено.
-    const db = createDb(config.server.DATABASE_URL);
     checks.push(dbHealthCheck(() => pingDatabase(db)));
   }
   return checks;
 }
 
+/**
+ * Реальный Temporal-клиент подключается на шаге 6. До этого `TEMPORAL_ENABLED`
+ * default false → stub; включение без реализации запрещено (no live infra).
+ */
+function buildTemporalPort(config: AgentApiConfig): TemporalPort {
+  if (config.temporal.enabled) {
+    throw new NotImplementedError('real Temporal client is added in step 6 (set TEMPORAL_ENABLED=false)');
+  }
+  return createStubTemporalPort();
+}
+
 async function main(): Promise<void> {
   const config = loadAgentApiConfig();
   const logger: Logger = createLogger('agent-api', { level: config.server.LOG_LEVEL });
+
+  // Единый пул соединений (I/O-точка — не в buildApp). Используется readiness,
+  // репозиторием задач и audit-sink; закрывается при graceful shutdown.
+  const db = createDb(config.server.DATABASE_URL);
+
+  // Реестр инструментов (метаданные/реальные handler'ы) + sandbox-брокер для
+  // admin test harness (in-memory deps, без реальных сайд-эффектов).
+  const toolRegistry = new ToolRegistry();
+  registerBaseTools(toolRegistry, createDbBaseToolDeps(db));
+  const sandboxRegistry = new ToolRegistry();
+  registerBaseTools(sandboxRegistry, createInMemoryBaseToolDeps().deps);
+  const toolTestBroker = new ToolBroker(sandboxRegistry);
+
   const app = await buildApp({
     config,
     logger,
     oidc: buildOidcVerifier(config),
-    healthChecks: buildHealthChecks(config),
+    healthChecks: buildHealthChecks(config, db),
+    taskRepo: createAgentTaskRepo(db),
+    temporal: buildTemporalPort(config),
+    auditSink: createDbAuditSink(db),
+    toolRegistry,
+    toolTestBroker,
   });
 
   let closing = false;
@@ -64,6 +107,7 @@ async function main(): Promise<void> {
     force.unref();
     app
       .close()
+      .then(() => closeDb(db))
       .then(() => process.exit(0))
       .catch((err) => {
         logger.error({ err }, 'error during shutdown');

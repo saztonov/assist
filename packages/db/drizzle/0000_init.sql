@@ -10,7 +10,10 @@
 
 CREATE TABLE agent_tasks (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  status              text NOT NULL DEFAULT 'pending',
+  -- Источник истины бизнес-статуса. Начальный статус — created; CHECK защищает
+  -- 7 контрактных статусов на уровне БД (defense in depth к app-автомату).
+  status              text NOT NULL DEFAULT 'created'
+    CHECK (status IN ('created','queued','running','waiting_for_approval','completed','failed','cancelled')),
   title               text,
   task_type           text,
   workflow_id         text,            -- Temporal workflow id (часть источника истины статуса)

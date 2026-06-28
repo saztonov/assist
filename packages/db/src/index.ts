@@ -45,6 +45,17 @@ export * from './schema/rag.js';
 export * from './contracts/providers.js';
 export * from './contracts/seed.js';
 
+// Жизненный цикл AgentTask: чистый статус-автомат, репозиторий (+in-memory),
+// DB-backed audit sink. Смена статуса — только через `transitionStatus`.
+export * from './domain/agentTaskStatus.js';
+export * from './repo/agentTaskRepo.js';
+export * from './repo/agentTaskRepo.memory.js';
+export * from './repo/approvalRepo.js';
+export * from './repo/artifactRepo.js';
+export * from './repo/outboxRepo.js';
+export * from './repo/toolRepo.js';
+export * from './audit/dbAuditSink.js';
+
 /**
  * Реляционная карта PUBLIC-схемы для `drizzle()`. Таблицы схемы `rag` сюда НЕ
  * включаются намеренно (доступ к ним — через `ragSchema`/типизированное зеркало).
@@ -66,9 +77,19 @@ export const schema = {
 
 export type Database = NodePgDatabase<typeof schema>;
 
+/** Связь Database → его pg.Pool (для graceful shutdown без зависимости от $client). */
+const pools = new WeakMap<Database, pg.Pool>();
+
 export function createDb(connectionString: string): Database {
   const pool = new pg.Pool({ connectionString });
-  return drizzle(pool, { schema });
+  const db = drizzle(pool, { schema });
+  pools.set(db, pool);
+  return db;
+}
+
+/** Закрывает пул соединений (graceful shutdown). */
+export async function closeDb(db: Database): Promise<void> {
+  await pools.get(db)?.end();
 }
 
 /**

@@ -1,10 +1,23 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createLogger } from '@su10/logger';
 import { createOidc, generateDevKeypair, signDevToken, type DevKeypair } from '@su10/oidc';
+import { InMemoryAgentTaskRepo } from '@su10/db';
+import { InMemoryAuditSink } from '@su10/audit';
+import { ToolBroker, ToolRegistry } from '@su10/tools';
+import { createInMemoryBaseToolDeps, registerBaseTools } from '@su10/tool-base';
 import { buildApp } from './app.js';
 import type { AgentApiConfig } from './config.js';
 import { ROUTE_GROUPS } from './routes/index.js';
+import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
 import type { HealthCheck } from './plugins/health.js';
+
+function makeToolDeps() {
+  const toolRegistry = new ToolRegistry();
+  registerBaseTools(toolRegistry, createInMemoryBaseToolDeps().deps);
+  const sandboxRegistry = new ToolRegistry();
+  registerBaseTools(sandboxRegistry, createInMemoryBaseToolDeps().deps);
+  return { toolRegistry, toolTestBroker: new ToolBroker(sandboxRegistry) };
+}
 
 const ISSUER = 'https://auth.su10.ru/realms/portal';
 const AUD = 'agent-api';
@@ -40,7 +53,8 @@ function makeConfig(devJwks: string): AgentApiConfig {
       devJwks,
       clockToleranceSec: 5,
     },
-    readiness: { llmEnabled: false },
+    readiness: { llmEnabled: false, dbEnabled: false },
+    temporal: { enabled: false },
   };
 }
 
@@ -49,7 +63,16 @@ async function makeApp(healthChecks?: HealthCheck[]) {
   const config = makeConfig(JSON.stringify(kp.publicJwks));
   const oidc = createOidc({ issuer: ISSUER, audience: AUD, clientId: AUD, jwks: kp.publicJwks });
   const logger = createLogger('agent-api-test', { level: 'silent' });
-  return buildApp({ config, logger, oidc, ...(healthChecks ? { healthChecks } : {}) });
+  return buildApp({
+    config,
+    logger,
+    oidc,
+    taskRepo: new InMemoryAgentTaskRepo(),
+    temporal: createStubTemporalPort(),
+    auditSink: new InMemoryAuditSink(),
+    ...makeToolDeps(),
+    ...(healthChecks ? { healthChecks } : {}),
+  });
 }
 
 const bearer = async () => ({
@@ -115,14 +138,34 @@ describe('agent-api foundation', () => {
     await app.close();
   });
 
-  it('every route group is registered and returns 501 with a valid token', async () => {
+  it('not-yet-implemented route groups return 501 with a valid token', async () => {
     const app = await makeApp();
     const headers = await bearer();
+    const implemented = new Set(['/agent/tasks', '/tools']);
     for (const group of ROUTE_GROUPS) {
+      if (implemented.has(group.prefix)) continue; // реализованы в этапах 4–5
       const res = await app.inject({ method: 'GET', url: `/api/v1${group.prefix}`, headers });
       expect(res.statusCode, group.prefix).toBe(501);
       expect(res.json()).toMatchObject({ error: { code: 'NOT_IMPLEMENTED' } });
     }
+    await app.close();
+  });
+
+  it('GET /api/v1/agent/tasks is implemented (200 list) with a valid token', async () => {
+    const app = await makeApp();
+    const headers = await bearer();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/agent/tasks', headers });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ items: [] });
+    await app.close();
+  });
+
+  it('GET /api/v1/tools is implemented (200 list) with a valid token', async () => {
+    const app = await makeApp();
+    const headers = await bearer();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/tools', headers });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.json().tools)).toBe(true);
     await app.close();
   });
 

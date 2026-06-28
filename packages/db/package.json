@@ -22,6 +22,7 @@
     "clean": "rimraf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@su10/audit": "workspace:*",
     "@su10/config": "workspace:*",
     "@su10/logger": "workspace:*",
     "@su10/errors": "workspace:*",

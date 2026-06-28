@@ -7,11 +7,18 @@
  */
 import type { FastifyPluginAsync } from 'fastify';
 import { NotImplementedError } from '@su10/errors';
+import { agentTasksRoutes, type AgentTasksDeps } from '../agent-tasks/routes.js';
+import { toolsRoutes, type ToolsRoutesDeps } from './tools.js';
 
 export interface RouteGroup {
   prefix: string;
   tag: string;
 }
+
+/** Зависимости реальных групп роутов (инжектируются из server.ts через buildApp). */
+export type RouteDeps = AgentTasksDeps & ToolsRoutesDeps;
+
+const IMPLEMENTED_PREFIXES = new Set(['/agent/tasks', '/tools']);
 
 export const ROUTE_GROUPS: readonly RouteGroup[] = [
   { prefix: '/agent/tasks', tag: 'agent-tasks' },
@@ -26,11 +33,14 @@ export const ROUTE_GROUPS: readonly RouteGroup[] = [
   { prefix: '/audit', tag: 'audit' },
 ];
 
-export const routes: FastifyPluginAsync = async (app) => {
+export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
+  // Реализованные группы: AgentTask lifecycle (этап 4) + Tool Registry (этап 5).
+  await app.register(agentTasksRoutes, deps);
+  await app.register(toolsRoutes, deps);
+
+  // Остальные группы — представительные 501-заглушки (заменяются в след. этапах).
   for (const group of ROUTE_GROUPS) {
-    // Each group is its own (encapsulated) plugin so later stages can split it
-    // into a dedicated file; the route path carries the full group prefix to
-    // keep clean, trailing-slash-free OpenAPI paths.
+    if (IMPLEMENTED_PREFIXES.has(group.prefix)) continue;
     await app.register(async (g) => {
       g.get(
         group.prefix,

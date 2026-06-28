@@ -40,6 +40,10 @@ export const agentApiEnvSchema = z
 
     LLM_READYCHECK_ENABLED: boolish.default('false'),
     DB_READYCHECK_ENABLED: boolish.default('false'),
+
+    // Реальный Temporal-клиент подключается на шаге 6. Пока default false → stub;
+    // ветка enabled в server.ts бросает NotImplementedError (no live infra).
+    TEMPORAL_ENABLED: boolish.default('false'),
   })
   .refine((e) => Boolean(e.OIDC_JWKS_URI) || Boolean(e.OIDC_DEV_JWKS), {
     message: 'either OIDC_JWKS_URI (prod) or OIDC_DEV_JWKS (local) is required',
@@ -67,6 +71,7 @@ export interface AgentApiConfig {
     clockToleranceSec: number;
   };
   readiness: { llmEnabled: boolean; dbEnabled: boolean };
+  temporal: { enabled: boolean };
 }
 
 /** Pure mapping env → config. Throws on cross-field policy violations. */
@@ -93,6 +98,7 @@ export function buildAgentApiConfig(server: ServerConfig, env: AgentApiEnv): Age
       clockToleranceSec: env.OIDC_CLOCK_TOLERANCE_S,
     },
     readiness: { llmEnabled: env.LLM_READYCHECK_ENABLED, dbEnabled: env.DB_READYCHECK_ENABLED },
+    temporal: { enabled: env.TEMPORAL_ENABLED },
   };
 }
 

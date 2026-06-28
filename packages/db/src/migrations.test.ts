@@ -60,6 +60,35 @@ describe('app SQL миграции: состав таблиц', () => {
   });
 });
 
+describe('app SQL: жизненный цикл agent_tasks.status (этап 4)', () => {
+  const block = tableBlock('agent_tasks');
+
+  it('default статуса — created (не pending)', () => {
+    expect(/status\s+text NOT NULL DEFAULT 'created'/i.test(block)).toBe(true);
+    expect(/status\s+text NOT NULL DEFAULT 'pending'/i.test(block)).toBe(false);
+  });
+
+  it('CHECK ограничивает 7 контрактных статусов', () => {
+    const m = block.match(/CHECK \(status IN \(([^)]*)\)\)/i);
+    expect(m).not.toBeNull();
+    const listed = (m?.[1] ?? '')
+      .split(',')
+      .map((s) => s.trim().replace(/'/g, ''))
+      .filter(Boolean);
+    expect(new Set(listed)).toEqual(
+      new Set([
+        'created',
+        'queued',
+        'running',
+        'waiting_for_approval',
+        'completed',
+        'failed',
+        'cancelled',
+      ]),
+    );
+  });
+});
+
 describe('app SQL: изоляция от PayHub-домена', () => {
   it('нет ссылок на public.letters / public.attachments / public.projects', () => {
     expect(/public\.letters/i.test(allSql)).toBe(false);

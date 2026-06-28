@@ -25,6 +25,14 @@ raw SQL в этом каталоге — источник истины для в
 > ВАЖНО: если когда-либо `0000_init.sql` будет применён к общей БД — переписывать его
 > запрещено; новые изменения оформляются **additive**-миграциями (`0007_*` и далее).
 
+### Жизненный цикл `agent_tasks.status` (этап 4)
+
+`agent_tasks.status` имеет DEFAULT `'created'` и `CHECK (status IN (...))` на 7 контрактных
+статусов (`created`, `queued`, `running`, `waiting_for_approval`, `completed`, `failed`,
+`cancelled`). Это правка baseline `0000_init.sql` (деплоя не было — допустимо по baseline-правилу).
+CHECK — defense in depth к app-уровневому статус-автомату (`@su10/db` `domain/agentTaskStatus`);
+смена статуса в runtime идёт только через `agentTaskRepo.transitionStatus`.
+
 ## Prerequisites расширений (admin/operator step)
 
 Runtime-роль **не может** создавать расширения. На Yandex Managed PostgreSQL это отдельный

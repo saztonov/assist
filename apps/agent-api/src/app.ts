@@ -17,6 +17,10 @@ import {
 import { securityPlugin, authPlugin } from '@su10/fastify-security';
 import type { Logger } from '@su10/logger';
 import type { OidcVerifier } from '@su10/oidc';
+import type { AuditSink } from '@su10/audit';
+import type { AgentTaskRepo } from '@su10/db';
+import type { ToolBroker, ToolRegistry } from '@su10/tools';
+import type { TemporalPort } from '@su10/workflow-engine';
 import type { AgentApiConfig } from './config.js';
 import { healthPlugin, type HealthCheck } from './plugins/health.js';
 import { openapiPlugin } from './plugins/openapi.js';
@@ -29,6 +33,16 @@ export interface BuildAppDeps {
   oidc: OidcVerifier;
   /** Readiness checks (empty by default → local-first, no egress). */
   healthChecks?: HealthCheck[];
+  /** AgentTask lifecycle repository (injected; tests pass an in-memory fake). */
+  taskRepo: AgentTaskRepo;
+  /** Temporal orchestration port (stub locally; real client added in step 6). */
+  temporal: TemporalPort;
+  /** Audit sink (DB-backed in server.ts; in-memory in tests). */
+  auditSink: AuditSink;
+  /** Реестр инструментов (метаданные для Tool Registry API). */
+  toolRegistry: ToolRegistry;
+  /** Sandbox-брокер для admin test harness (без реальных сайд-эффектов). */
+  toolTestBroker: ToolBroker;
 }
 
 export async function buildApp(deps: BuildAppDeps) {
@@ -69,7 +83,14 @@ export async function buildApp(deps: BuildAppDeps) {
         oidc,
         allowedSourcePortals: config.allowedSourcePortals,
       });
-      await api.register(routes);
+      await api.register(routes, {
+        taskRepo: deps.taskRepo,
+        temporal: deps.temporal,
+        auditSink: deps.auditSink,
+        taskQueue: config.server.TEMPORAL_TASK_QUEUE,
+        toolRegistry: deps.toolRegistry,
+        toolTestBroker: deps.toolTestBroker,
+      });
     },
     { prefix: config.apiPrefix },
   );

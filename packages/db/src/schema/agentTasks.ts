@@ -8,7 +8,8 @@ import { uuidPk, createdAt, updatedAt } from './_columns.js';
 
 export const agentTasks = pgTable('agent_tasks', {
   id: uuidPk(),
-  status: text('status').notNull().default('pending'),
+  // Начальный статус — created (см. CHECK в 0000_init.sql на 7 контрактных статусов).
+  status: text('status').notNull().default('created'),
   title: text('title'),
   taskType: text('task_type'),
   workflowId: text('workflow_id'),

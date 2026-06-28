@@ -10,6 +10,8 @@
  * cluster is provisioned; the injected-activities shape below is what it targets.
  */
 
+export * from './temporalPort.js';
+
 export interface AgentTaskActivities {
   recordTaskStatus(taskId: string, status: string): Promise<void>;
 }

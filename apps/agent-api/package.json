@@ -13,6 +13,7 @@
     "clean": "rimraf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@su10/audit": "workspace:*",
     "@su10/config": "workspace:*",
     "@su10/db": "workspace:*",
     "@su10/errors": "workspace:*",
@@ -21,6 +22,9 @@
     "@su10/logger": "workspace:*",
     "@su10/oidc": "workspace:*",
     "@su10/permissions": "workspace:*",
+    "@su10/tools": "workspace:*",
+    "@su10/tool-base": "workspace:*",
+    "@su10/workflow-engine": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
     "@fastify/swagger": "catalog:",
     "@fastify/swagger-ui": "catalog:",

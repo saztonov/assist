@@ -84,6 +84,12 @@ export class ToolApprovalRequiredError extends AppError {
   }
 }
 
+export class ConflictError extends AppError {
+  constructor(publicMessage = 'Conflict', meta?: Record<string, unknown>) {
+    super({ code: 'CONFLICT', httpStatus: 409, publicMessage, meta });
+  }
+}
+
 export class NotImplementedError extends AppError {
   constructor(publicMessage = 'Not implemented', meta?: Record<string, unknown>) {
     super({ code: 'NOT_IMPLEMENTED', httpStatus: 501, publicMessage, meta });

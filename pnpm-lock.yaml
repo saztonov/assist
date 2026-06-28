@@ -129,6 +129,9 @@ catalogs:
     zod:
       specifier: ^3.24.0
       version: 3.25.76
+    zod-to-json-schema:
+      specifier: ^3.24.0
+      version: 3.25.2
 
 importers:
 
@@ -188,6 +191,9 @@ importers:
       '@fastify/under-pressure':
         specifier: 'catalog:'
         version: 9.0.3
+      '@su10/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@su10/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -212,6 +218,15 @@ importers:
       '@su10/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
+      '@su10/tool-base':
+        specifier: workspace:*
+        version: link:../../packages/tool-base
+      '@su10/tools':
+        specifier: workspace:*
+        version: link:../../packages/tools
+      '@su10/workflow-engine':
+        specifier: workspace:*
+        version: link:../../packages/workflow-engine
       '@su10/workflow-schema':
         specifier: workspace:*
         version: link:../../packages/workflow-schema
@@ -407,6 +422,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@su10/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@su10/config':
         specifier: workspace:*
         version: link:../config
@@ -767,6 +785,37 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  packages/tool-base:
+    dependencies:
+      '@su10/db':
+        specifier: workspace:*
+        version: link:../db
+      '@su10/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@su10/permissions':
+        specifier: workspace:*
+        version: link:../permissions
+      '@su10/tools':
+        specifier: workspace:*
+        version: link:../tools
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@su10/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.3
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.15)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   packages/tools:
     dependencies:
       '@su10/audit':
@@ -787,6 +836,9 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
+      zod-to-json-schema:
+        specifier: 'catalog:'
+        version: 3.25.2(zod@3.25.76)
     devDependencies:
       '@su10/tsconfig':
         specifier: workspace:*

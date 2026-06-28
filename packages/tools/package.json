@@ -27,7 +27,8 @@
     "@su10/audit": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
     "@su10/connectors": "workspace:*",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

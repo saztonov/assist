@@ -20,6 +20,7 @@ const SERVER_ONLY = [
   '@su10/rag',
   '@su10/connectors',
   '@su10/tools',
+  '@su10/tool-base',
   '@su10/mcp',
   '@su10/agents',
   '@su10/workflow-engine',
@@ -59,6 +60,37 @@ export default [
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-empty-object-type': 'off',
+    },
+  },
+  {
+    // Запрет обхода Tool Broker: агенты/воркфлоу могут импортировать ТОЛЬКО ядро
+    // `@su10/tools` (тип ToolBroker), но НЕ базовые инструменты `@su10/tool-base`
+    // (их handler'ы исполняются исключительно через брокер).
+    files: [
+      'packages/agents/**/*.{ts,tsx}',
+      'packages/workflow-engine/**/*.{ts,tsx}',
+      'workers/agent-worker/**/*.{ts,tsx}',
+      'workers/temporal-worker/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@su10/tool-base',
+              message:
+                'Agents/workflows must invoke tools only via ToolBroker (@su10/tools); do not import base tool handlers.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@su10/tool-base/*'],
+              message: 'Do not deep-import base tool handlers; execute tools via ToolBroker.invoke.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
