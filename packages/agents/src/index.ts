@@ -1,39 +1,22 @@
 /**
- * LangGraph.js agent graphs. NODE-ONLY.
- * Agents may act ONLY through the Tool Broker (@su10/tools). LangGraph checkpoints
- * are internal and are NOT the business-status source of truth.
+ * LangGraph.js agent runtime. NODE-ONLY.
+ *
+ * Агенты действуют ТОЛЬКО через Tool Broker (`@su10/tools`) — с per-agent allowlist
+ * (forbidden-tool guard) — и через интерфейс LLM Gateway (`@su10/llm`; реальный
+ * клиент LM Studio — этап 8). LangGraph checkpoint НЕ источник бизнес-статуса.
  */
-import type { ToolBroker } from '@su10/tools';
+import { createAgentRuntime, type AgentRuntime } from './runtime.js';
+import { chatAgent } from './agents/chatAgent.js';
+import { ragAgent } from './agents/ragAgent.js';
+import { documentExtractionAgent } from './agents/documentExtractionAgent.js';
 
-export interface AgentStepInput {
-  prompt: string;
+export * from './runtime.js';
+export * from './fakeGateway.js';
+export { chatAgent } from './agents/chatAgent.js';
+export { ragAgent } from './agents/ragAgent.js';
+export { documentExtractionAgent } from './agents/documentExtractionAgent.js';
+
+/** Runtime с тремя базовыми агентами: chat_agent, rag_agent, document_extraction_agent. */
+export function createDefaultAgentRuntime(): AgentRuntime {
+  return createAgentRuntime([chatAgent(), ragAgent(), documentExtractionAgent()]);
 }
-
-export interface AgentStepResult {
-  output: string;
-}
-
-export interface CompiledAgentGraph {
-  invoke(input: AgentStepInput): Promise<AgentStepResult>;
-}
-
-export interface AgentGraphDefinition {
-  name: string;
-}
-
-/**
- * Scaffold stub. Real LangGraph.js `StateGraph` wiring is added when the agent
- * runtime is implemented; tool calls will route through the injected broker.
- */
-export function createAgentGraph(
-  def: AgentGraphDefinition,
-  _broker?: ToolBroker,
-): CompiledAgentGraph {
-  return {
-    async invoke(input: AgentStepInput): Promise<AgentStepResult> {
-      return { output: `[${def.name}] ${input.prompt}` };
-    },
-  };
-}
-
-export const echoAgent = createAgentGraph({ name: 'echo' });

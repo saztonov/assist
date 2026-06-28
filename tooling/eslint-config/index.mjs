@@ -63,14 +63,15 @@ export default [
     },
   },
   {
-    // Запрет обхода Tool Broker: агенты/воркфлоу могут импортировать ТОЛЬКО ядро
-    // `@su10/tools` (тип ToolBroker), но НЕ базовые инструменты `@su10/tool-base`
-    // (их handler'ы исполняются исключительно через брокер).
+    // Запрет обхода Tool Broker: агентная/воркфлоу-ЛОГИКА может импортировать
+    // ТОЛЬКО ядро `@su10/tools` (тип ToolBroker), но НЕ базовые инструменты
+    // `@su10/tool-base` (их handler'ы исполняются исключительно через брокер).
+    // Композиционные корни процессов (agent-api server.ts, temporal-worker host)
+    // в этот список НЕ входят — они собирают broker из tool-base, как и положено.
     files: [
       'packages/agents/**/*.{ts,tsx}',
       'packages/workflow-engine/**/*.{ts,tsx}',
       'workers/agent-worker/**/*.{ts,tsx}',
-      'workers/temporal-worker/**/*.{ts,tsx}',
     ],
     rules: {
       'no-restricted-imports': [

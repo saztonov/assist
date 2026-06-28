@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./workflows": {
+      "types": "./dist/workflows.d.ts",
+      "import": "./dist/workflows.js"
     }
   },
   "files": [
@@ -25,7 +29,9 @@
     "@su10/workflow-schema": "workspace:*",
     "@su10/db": "workspace:*",
     "@su10/audit": "workspace:*",
-    "@su10/errors": "workspace:*"
+    "@su10/errors": "workspace:*",
+    "@temporalio/workflow": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

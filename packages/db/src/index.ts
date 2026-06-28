@@ -54,6 +54,8 @@ export * from './repo/approvalRepo.js';
 export * from './repo/artifactRepo.js';
 export * from './repo/outboxRepo.js';
 export * from './repo/toolRepo.js';
+export * from './repo/agentRunRepo.js';
+export * from './repo/agentRunRepo.memory.js';
 export * from './audit/dbAuditSink.js';
 
 /**

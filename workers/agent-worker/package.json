@@ -27,6 +27,10 @@
     "@su10/llm": "workspace:*",
     "@su10/rag": "workspace:*",
     "@su10/mcp": "workspace:*",
+    "@su10/db": "workspace:*",
+    "@su10/audit": "workspace:*",
+    "@su10/permissions": "workspace:*",
+    "@su10/workflow-engine": "workspace:*",
     "@su10/config": "workspace:*",
     "@su10/logger": "workspace:*",
     "@su10/errors": "workspace:*"

@@ -26,8 +26,13 @@
     "@su10/llm": "workspace:*",
     "@su10/rag": "workspace:*",
     "@su10/mcp": "workspace:*",
+    "@su10/permissions": "workspace:*",
+    "@su10/audit": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
-    "@su10/errors": "workspace:*"
+    "@su10/errors": "workspace:*",
+    "@langchain/langgraph": "catalog:",
+    "@langchain/core": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

@@ -80,6 +80,7 @@ export const agentTasksRoutes: FastifyPluginAsync<AgentTasksDeps> = async (root,
           taskId: task.id,
           templateId: task.templateId ?? undefined,
           taskQueue,
+          subject: { id: auth.sub, roles: auth.roles },
         });
         const queued = await taskRepo.transitionStatus({
           taskId: task.id,

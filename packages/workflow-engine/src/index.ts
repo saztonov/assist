@@ -1,33 +1,17 @@
 /**
- * Temporal workflow + activity definitions. NODE-ONLY.
+ * Temporal workflow engine — публичная поверхность пакета. NODE-ONLY.
  *
- * The workflow is deterministic and performs NO DB/S3/HTTP itself — side effects
- * (incl. updating agent_tasks, the status source of truth) happen in activities
- * whose implementations are INJECTED by the worker host. This keeps workflow
- * code free of heavy deps and preserves an acyclic dependency graph.
+ * Экспортируются: порт оркестрации (`TemporalPort`), контракт activities,
+ * сериализуемые контракты/константы и ЧИСТАЯ orchestration-логика (для worker и
+ * offline-тестов). Сами Temporal-workflow (`workflows.ts`) СЮДА НЕ входят — их
+ * грузит только worker через `workflowsPath`, чтобы consumers (agent-api) не
+ * тянули `@temporalio/workflow` и сохранялся ацикличный граф зависимостей.
  *
- * Real @temporalio/workflow `proxyActivities` wiring is added when the Temporal
- * cluster is provisioned; the injected-activities shape below is what it targets.
+ * Источник истины бизнес-статуса — `agent_tasks.status` + Temporal `workflow_id`;
+ * смена статуса только через activity `recordTaskStatus` → `transitionStatus`.
  */
-
 export * from './temporalPort.js';
-
-export interface AgentTaskActivities {
-  recordTaskStatus(taskId: string, status: string): Promise<void>;
-}
-
-export type Activities = AgentTaskActivities;
-
-export interface RunAgentTaskInput {
-  taskId: string;
-  templateId: string;
-}
-
-export async function runAgentTaskWorkflow(
-  input: RunAgentTaskInput,
-  activities: AgentTaskActivities,
-): Promise<string> {
-  await activities.recordTaskStatus(input.taskId, 'running');
-  await activities.recordTaskStatus(input.taskId, 'completed');
-  return input.taskId;
-}
+export * from './activities.js';
+// constants реэкспортируются через contracts.js (избегаем двойного `export *`).
+export * from './contracts.js';
+export * from './orchestration.js';

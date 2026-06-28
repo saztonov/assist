@@ -11,6 +11,12 @@ export interface StartAgentTaskWorkflowArgs {
   taskId: string;
   templateId?: string;
   taskQueue: string;
+  /** От чьего имени исполняется workflow (ids/roles, без сырья). */
+  subject?: { id: string; roles: string[] };
+  /** Короткая постановка агенту (не ПДн); по умолчанию пусто. */
+  prompt?: string;
+  agentName?: string;
+  requireApproval?: boolean;
 }
 
 export interface TemporalPort {

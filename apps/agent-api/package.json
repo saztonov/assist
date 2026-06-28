@@ -26,6 +26,7 @@
     "@su10/tool-base": "workspace:*",
     "@su10/workflow-engine": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
+    "@temporalio/client": "catalog:",
     "@fastify/swagger": "catalog:",
     "@fastify/swagger-ui": "catalog:",
     "@fastify/under-pressure": "catalog:",

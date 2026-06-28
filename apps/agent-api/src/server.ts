@@ -13,7 +13,6 @@ import {
 } from '@su10/db';
 import { createLogger, type Logger } from '@su10/logger';
 import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
-import { NotImplementedError } from '@su10/errors';
 import { ToolBroker, ToolRegistry } from '@su10/tools';
 import {
   createDbBaseToolDeps,
@@ -24,6 +23,7 @@ import type { TemporalPort } from '@su10/workflow-engine';
 import { buildApp } from './app.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
 import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
+import { createTemporalClientPort } from './temporal/temporalClientPort.js';
 import {
   dbHealthCheck,
   jwksHealthCheck,
@@ -60,12 +60,17 @@ function buildHealthChecks(config: AgentApiConfig, db: Database): HealthCheck[] 
 }
 
 /**
- * Реальный Temporal-клиент подключается на шаге 6. До этого `TEMPORAL_ENABLED`
- * default false → stub; включение без реализации запрещено (no live infra).
+ * Temporal-порт: при `TEMPORAL_ENABLED=true` — реальный `@temporalio/client`
+ * (I/O вне `buildApp`); иначе local-first stub. Реальный порт умеет `close()`.
  */
-function buildTemporalPort(config: AgentApiConfig): TemporalPort {
+async function buildTemporalPort(
+  config: AgentApiConfig,
+): Promise<TemporalPort & { close?(): Promise<void> }> {
   if (config.temporal.enabled) {
-    throw new NotImplementedError('real Temporal client is added in step 6 (set TEMPORAL_ENABLED=false)');
+    return createTemporalClientPort({
+      address: config.server.TEMPORAL_ADDRESS,
+      namespace: config.server.TEMPORAL_NAMESPACE,
+    });
   }
   return createStubTemporalPort();
 }
@@ -86,13 +91,15 @@ async function main(): Promise<void> {
   registerBaseTools(sandboxRegistry, createInMemoryBaseToolDeps().deps);
   const toolTestBroker = new ToolBroker(sandboxRegistry);
 
+  const temporal = await buildTemporalPort(config);
+
   const app = await buildApp({
     config,
     logger,
     oidc: buildOidcVerifier(config),
     healthChecks: buildHealthChecks(config, db),
     taskRepo: createAgentTaskRepo(db),
-    temporal: buildTemporalPort(config),
+    temporal,
     auditSink: createDbAuditSink(db),
     toolRegistry,
     toolTestBroker,
@@ -107,6 +114,7 @@ async function main(): Promise<void> {
     force.unref();
     app
       .close()
+      .then(() => temporal.close?.())
       .then(() => closeDb(db))
       .then(() => process.exit(0))
       .catch((err) => {

@@ -4,14 +4,19 @@ import { dirname, resolve } from 'node:path';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const pkg = (p: string) => resolve(dir, 'packages', p);
+const wrk = (p: string) => resolve(dir, 'workers', p);
 
 // Tests run against package SOURCE (not built dist) via these aliases, so the
 // suite is green without a prior build. `@su10/config/public` must precede the
-// generic rule because it maps to a non-index entry point.
+// generic rule because it maps to a non-index entry point. Worker packages live
+// under workers/ (not packages/), so they need explicit aliases before the rule.
 export default defineConfig({
   resolve: {
     alias: [
       { find: '@su10/config/public', replacement: pkg('config/src/public.ts') },
+      { find: '@su10/agent-worker', replacement: wrk('agent-worker/src/index.ts') },
+      { find: '@su10/temporal-worker', replacement: wrk('temporal-worker/src/index.ts') },
+      { find: '@su10/document-worker', replacement: wrk('document-worker/src/index.ts') },
       { find: /^@su10\/(.*)$/, replacement: pkg('$1/src/index.ts') },
     ],
   },

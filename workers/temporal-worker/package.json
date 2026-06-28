@@ -23,14 +23,20 @@
   },
   "dependencies": {
     "@su10/workflow-engine": "workspace:*",
+    "@su10/agent-worker": "workspace:*",
     "@su10/db": "workspace:*",
+    "@su10/tools": "workspace:*",
+    "@su10/tool-base": "workspace:*",
     "@su10/audit": "workspace:*",
     "@su10/config": "workspace:*",
     "@su10/logger": "workspace:*",
-    "@su10/errors": "workspace:*"
+    "@su10/errors": "workspace:*",
+    "@temporalio/worker": "catalog:",
+    "@temporalio/client": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",
+    "@temporalio/testing": "catalog:",
     "typescript": "catalog:",
     "tsup": "catalog:",
     "rimraf": "catalog:"
