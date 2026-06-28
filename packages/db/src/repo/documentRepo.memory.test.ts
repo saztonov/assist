@@ -51,6 +51,21 @@ describe('InMemoryDocumentRepo', () => {
     expect((await repo.getLatestVersion(document.id))?.sizeBytes).toBe(100);
   });
 
+  it('findBySource locates a document by external source identity', async () => {
+    const repo = new InMemoryDocumentRepo();
+    const { document } = await repo.createUploadSession({
+      ownerUserId: 'u-1',
+      createdBy: 'u-1',
+      filename: 'inv.pdf',
+      mimeType: 'application/pdf',
+      storageKey: 'k',
+      sourceObjectType: 'mail_attachment',
+      sourceObjectId: 'conn-1/INBOX/42/2',
+    });
+    expect((await repo.findBySource('mail_attachment', 'conn-1/INBOX/42/2'))?.id).toBe(document.id);
+    expect(await repo.findBySource('mail_attachment', 'conn-1/INBOX/42/9')).toBeUndefined();
+  });
+
   it('setStatus transitions through indexing/indexed', async () => {
     const repo = new InMemoryDocumentRepo();
     const { document } = await repo.createUploadSession({

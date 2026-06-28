@@ -63,6 +63,7 @@ export * from './repo/documentRepo.js';
 export * from './repo/ragChunkRepo.js';
 export * from './repo/ragQueryRepo.js';
 export * from './repo/providerRepo.js';
+export * from './repo/connectorRepo.js';
 export * from './audit/dbAuditSink.js';
 export * from './audit/llmCallSink.js';
 

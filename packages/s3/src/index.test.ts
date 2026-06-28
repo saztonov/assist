@@ -7,6 +7,7 @@ import {
   getObjectBytes,
   getPresignedPutUrl,
   headObject,
+  putObject,
 } from './index.js';
 
 const realClient = createS3Client({
@@ -73,6 +74,23 @@ describe('headObject', () => {
       },
     } as unknown as S3Client;
     await expect(headObject(fake, 'bucket', 'k')).rejects.toBeTruthy();
+  });
+});
+
+describe('putObject', () => {
+  it('sends a PutObject with the bytes and optional content type', async () => {
+    const calls: Array<{ Bucket?: string; Key?: string; Body?: unknown; ContentType?: string }> = [];
+    const fake = {
+      send: async (cmd: { input: typeof calls[number] }) => {
+        calls.push(cmd.input);
+        return {};
+      },
+    } as unknown as S3Client;
+    await putObject(fake, 'bucket', 'documents/x/a.pdf', new Uint8Array([1, 2, 3]), 'application/pdf');
+    expect(calls).toHaveLength(1);
+    expect(calls[0].Bucket).toBe('bucket');
+    expect(calls[0].Key).toBe('documents/x/a.pdf');
+    expect(calls[0].ContentType).toBe('application/pdf');
   });
 });
 

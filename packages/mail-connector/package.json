@@ -1,0 +1,44 @@
+{
+  "name": "@su10/mail-connector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@su10/audit": "workspace:*",
+    "@su10/db": "workspace:*",
+    "@su10/errors": "workspace:*",
+    "@su10/permissions": "workspace:*",
+    "@su10/s3": "workspace:*",
+    "@su10/tools": "workspace:*",
+    "imapflow": "catalog:",
+    "mailparser": "catalog:",
+    "nodemailer": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@su10/tsconfig": "workspace:*",
+    "@types/mailparser": "catalog:",
+    "@types/nodemailer": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "rimraf": "catalog:"
+  }
+}

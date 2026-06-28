@@ -5,17 +5,31 @@
  */
 import {
   createAgentTaskRepo,
+  createConnectorRepo,
   createDb,
   createDbAuditSink,
   createDbLlmCallRecorder,
   createDocumentRepo,
+  createEnvSecretResolver,
   createProviderRepo,
   createRagQueryRepo,
   closeDb,
   pingDatabase,
+  InMemoryConnectorRepo,
+  InMemoryDocumentRepo,
   type Database,
+  type SecretResolver,
 } from '@su10/db';
-import { createS3Client, createS3DocumentStorage } from '@su10/s3';
+import { createS3Client, createS3DocumentStorage, type DocumentStoragePort } from '@su10/s3';
+import {
+  createImapMailProviderFactory,
+  createStubMailProviderFactory,
+  registerMailTools,
+  StubMailProvider,
+  type MailConnectorOptions,
+  type MailDocumentProcessingPort,
+  type MailToolDeps,
+} from '@su10/mail-connector';
 import {
   createLlmGateway,
   createMockEmbeddingProvider,
@@ -35,6 +49,7 @@ import {
 import type { TemporalPort } from '@su10/workflow-engine';
 import { buildApp } from './app.js';
 import type { DocumentsDeps, DocumentProcessingPort } from './documents/routes.js';
+import type { ConnectorsDeps } from './connectors/routes.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
 import { createStubTemporalPort } from './temporal/stubTemporalPort.js';
 import { createTemporalClientPort } from './temporal/temporalClientPort.js';
@@ -119,6 +134,91 @@ function buildDocumentsDeps(
 }
 
 /**
+ * Mail connector deps (шаг 10) — только при `MAIL_CONNECTOR_ENABLED` и наличии S3
+ * (вложения сохраняются в S3). Возвращает REST deps + Tool Broker deps. Реальный
+ * IMAP-провайдер; черновики через APPEND, отправки нет. Секреты — через secret_ref.
+ */
+function buildMailConnector(
+  config: AgentApiConfig,
+  db: Database,
+  auditSink: AuditSink,
+  temporal: TemporalPort,
+  secretResolver: SecretResolver,
+): { connectors: ConnectorsDeps; toolDeps: MailToolDeps; options: MailConnectorOptions } | undefined {
+  const s = config.server;
+  if (
+    !s.MAIL_CONNECTOR_ENABLED ||
+    !s.S3_ENDPOINT ||
+    !s.S3_REGION ||
+    !s.S3_BUCKET ||
+    !s.S3_ACCESS_KEY_ID ||
+    !s.S3_SECRET_ACCESS_KEY
+  ) {
+    return undefined;
+  }
+  const client = createS3Client({
+    endpoint: s.S3_ENDPOINT,
+    region: s.S3_REGION,
+    accessKeyId: s.S3_ACCESS_KEY_ID,
+    secretAccessKey: s.S3_SECRET_ACCESS_KEY,
+    forcePathStyle: s.S3_FORCE_PATH_STYLE,
+  });
+  const storage = createS3DocumentStorage(client, {
+    bucket: s.S3_BUCKET,
+    presignExpirySeconds: s.S3_PRESIGN_EXPIRY_SECONDS,
+  });
+  const options: MailConnectorOptions = {
+    rateLimit: {
+      capacity: s.MAIL_RATE_LIMIT_CAPACITY,
+      refillPerSec: s.MAIL_RATE_LIMIT_REFILL_PER_SEC,
+    },
+    maxAttachmentBytes: s.MAIL_MAX_ATTACHMENT_BYTES,
+    bodyMaxChars: s.MAIL_BODY_MAX_CHARS,
+  };
+  const providerFactory = createImapMailProviderFactory({ rateLimit: options.rateLimit });
+  const connectorRepo = createConnectorRepo(db);
+  const documentProcessing: MailDocumentProcessingPort = {
+    start: (input) =>
+      temporal.startDocumentProcessingWorkflow({
+        documentId: input.documentId,
+        documentVersionId: input.documentVersionId,
+        taskQueue: s.TEMPORAL_TASK_QUEUE,
+        subject: input.subject,
+      }),
+  };
+  const toolDeps: MailToolDeps = {
+    connectorRepo,
+    secretResolver,
+    providerFactory,
+    options,
+    storage,
+    documentRepo: createDocumentRepo(db),
+    documentProcessing,
+  };
+  const connectors: ConnectorsDeps = { connectorRepo, secretResolver, providerFactory, auditSink };
+  return { connectors, toolDeps, options };
+}
+
+/** Sandbox mail deps for the admin test harness: stub provider + in-memory repos. */
+function buildSandboxMailDeps(options: MailConnectorOptions): MailToolDeps {
+  const sandboxStorage: DocumentStoragePort = {
+    buildObjectKey: ({ filename }) => `documents/sandbox/${filename}`,
+    presignPut: async (key) => `https://sandbox.local/${key}`,
+    putObject: async () => undefined,
+    headObject: async () => ({ size: 0 }),
+    getObjectBytes: async () => new Uint8Array(),
+  };
+  return {
+    connectorRepo: new InMemoryConnectorRepo(),
+    secretResolver: createEnvSecretResolver(),
+    providerFactory: createStubMailProviderFactory(new StubMailProvider([])),
+    options,
+    storage: sandboxStorage,
+    documentRepo: new InMemoryDocumentRepo(),
+  };
+}
+
+/**
  * Temporal-порт: при `TEMPORAL_ENABLED=true` — реальный `@temporalio/client`
  * (I/O вне `buildApp`); иначе local-first stub. Реальный порт умеет `close()`.
  */
@@ -153,6 +253,15 @@ async function main(): Promise<void> {
   const temporal = await buildTemporalPort(config);
   const auditSink = createDbAuditSink(db);
   const documents = buildDocumentsDeps(config, db, auditSink, temporal);
+
+  // Mail connector (шаг 10): tools через Tool Broker + REST /connectors. Секреты —
+  // через secret_ref; реальный IMAP-провайдер. Регистрируется только под gate.
+  const secretResolver = createEnvSecretResolver();
+  const mail = buildMailConnector(config, db, auditSink, temporal, secretResolver);
+  if (mail) {
+    registerMailTools(toolRegistry, mail.toolDeps);
+    registerMailTools(sandboxRegistry, buildSandboxMailDeps(mail.options));
+  }
 
   // LLM gateway (единственный путь к LM Studio) + RAG-сервис. Embedding-провайдер
   // отделён от chat/vision: `mock` локально, prod-провайдер — отдельной policy.
@@ -205,6 +314,7 @@ async function main(): Promise<void> {
     toolRegistry,
     toolTestBroker,
     ...(documents ? { documents } : {}),
+    ...(mail ? { connectors: mail.connectors } : {}),
     rag: { ragService, llm: llmGateway, auditSink },
     llmAdmin: { providerRepo: createProviderRepo(db), llm: llmGateway, auditSink },
   });

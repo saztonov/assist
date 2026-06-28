@@ -7,7 +7,7 @@
  * in status `pending_upload` plus its first version; confirm flips it to
  * `uploaded` and enqueues a parse job. Raw file bytes are never stored in the DB.
  */
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import {
   documents,
   documentVersions,
@@ -65,6 +65,11 @@ export interface DocumentRepo {
   createUploadSession(
     input: CreateUploadSessionInput,
   ): Promise<{ document: DocumentRow; version: DocumentVersionRow }>;
+  /** Idempotency lookup: find a document by its external source identity. */
+  findBySource(
+    sourceObjectType: string,
+    sourceObjectId: string,
+  ): Promise<DocumentRow | undefined>;
   getDocumentById(id: string): Promise<DocumentRow | undefined>;
   getLatestVersion(documentId: string): Promise<DocumentVersionRow | undefined>;
   listAcl(documentId: string): Promise<DocumentAclRow[]>;
@@ -135,6 +140,20 @@ export function createDocumentRepo(db: Database): DocumentRepo {
         await tx.insert(documentAcl).values(aclRows);
         return { document, version };
       });
+    },
+
+    async findBySource(sourceObjectType, sourceObjectId) {
+      const [row] = await db
+        .select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.sourceObjectType, sourceObjectType),
+            eq(documents.sourceObjectId, sourceObjectId),
+          ),
+        )
+        .limit(1);
+      return row;
     },
 
     async getDocumentById(id) {
@@ -260,6 +279,12 @@ export class InMemoryDocumentRepo implements DocumentRepo {
       });
     }
     return { document, version };
+  }
+
+  async findBySource(sourceObjectType: string, sourceObjectId: string) {
+    return this.documents.find(
+      (d) => d.sourceObjectType === sourceObjectType && d.sourceObjectId === sourceObjectId,
+    );
   }
 
   async getDocumentById(id: string) {

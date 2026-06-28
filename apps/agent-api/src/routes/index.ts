@@ -12,6 +12,7 @@ import { toolsRoutes, type ToolsRoutesDeps } from './tools.js';
 import { documentsRoutes, type DocumentsDeps } from '../documents/routes.js';
 import { ragRoutes, type RagDeps } from '../rag/routes.js';
 import { llmAdminRoutes, type LlmAdminDeps } from '../llm/routes.js';
+import { connectorsRoutes, type ConnectorsDeps } from '../connectors/routes.js';
 
 export interface RouteGroup {
   prefix: string;
@@ -27,6 +28,8 @@ export type RouteDeps = AgentTasksDeps &
     rag?: RagDeps;
     /** LLM admin API — registered only when the provider registry is wired. */
     llmAdmin?: LlmAdminDeps;
+    /** Connectors API — registered only when the mail connector is enabled. */
+    connectors?: ConnectorsDeps;
   };
 
 const BASE_IMPLEMENTED_PREFIXES = ['/agent/tasks', '/tools'] as const;
@@ -66,6 +69,12 @@ export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
   // LLM admin API (этап 8 / M7) — только если сконфигурирован реестр провайдеров.
   if (deps.llmAdmin) {
     await app.register(llmAdminRoutes, deps.llmAdmin);
+  }
+
+  // Connectors API (шаг 10) — только при включённом mail connector.
+  if (deps.connectors) {
+    await app.register(connectorsRoutes, deps.connectors);
+    implemented.add('/connectors');
   }
 
   // Остальные группы — представительные 501-заглушки (заменяются в след. этапах).

@@ -20,6 +20,7 @@
     "@su10/fastify-security": "workspace:*",
     "@su10/llm": "workspace:*",
     "@su10/logger": "workspace:*",
+    "@su10/mail-connector": "workspace:*",
     "@su10/oidc": "workspace:*",
     "@su10/permissions": "workspace:*",
     "@su10/rag": "workspace:*",

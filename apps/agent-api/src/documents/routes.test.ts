@@ -44,6 +44,7 @@ function fakeStorage(state: { exists: boolean }): DocumentStoragePort {
   return {
     buildObjectKey: ({ filename }) => `documents/test/${filename}`,
     presignPut: async (key) => `https://s3.local/${key}?X-Amz-Signature=abc`,
+    putObject: async () => undefined,
     headObject: async () => (state.exists ? { size: 10, etag: '"e"' } : null),
     getObjectBytes: async () => new Uint8Array([1, 2, 3]),
   };

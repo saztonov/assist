@@ -17,6 +17,17 @@ export const RAG_ACTIONS = {
   answer: 'rag.answer',
 } as const;
 
+export const MAIL_ACTIONS = {
+  connectionList: 'mail.connection.list',
+  search: 'mail.search',
+  getMessage: 'mail.get_message',
+  getAttachments: 'mail.get_attachments',
+  saveAttachments: 'mail.save_attachments_to_s3',
+  createDraft: 'mail.create_draft',
+  accountCreate: 'connector.mail.create',
+  connectionTest: 'connector.mail.test',
+} as const;
+
 export const LLM_ADMIN_ACTIONS = {
   providerCreate: 'llm.provider.create',
   providerUpdate: 'llm.provider.update',

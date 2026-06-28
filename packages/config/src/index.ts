@@ -78,6 +78,19 @@ const serverObjectSchema = z
     S3_FORCE_PATH_STYLE: boolish.default('true'),
     S3_PRESIGN_EXPIRY_SECONDS: z.coerce.number().int().positive().default(900),
 
+    // Read-only mail connector (generic IMAP; drafts via APPEND, NEVER sends).
+    // Distinct from the SES/Postbox send block (MAIL_PROVIDER/MAIL_FROM/...).
+    // Attachments are saved to S3, so enabling requires S3 (see refine below).
+    MAIL_CONNECTOR_ENABLED: boolish.default('false'),
+    MAIL_IMAP_DEFAULT_HOST: z.string().min(1).optional(),
+    MAIL_IMAP_DEFAULT_PORT: z.coerce.number().int().positive().default(993),
+    MAIL_IMAP_DEFAULT_SECURE: boolish.default('true'),
+    MAIL_IMAP_DEFAULT_DRAFTS_MAILBOX: z.string().min(1).default('Drafts'),
+    MAIL_RATE_LIMIT_CAPACITY: z.coerce.number().int().positive().default(10),
+    MAIL_RATE_LIMIT_REFILL_PER_SEC: z.coerce.number().positive().default(2),
+    MAIL_MAX_ATTACHMENT_BYTES: z.coerce.number().int().positive().default(26_214_400),
+    MAIL_BODY_MAX_CHARS: z.coerce.number().int().positive().default(50_000),
+
     RAG_ACL_ENFORCE: boolish.default('true'),
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   })
@@ -100,6 +113,18 @@ const serverObjectSchema = z
       message:
         'DOCUMENTS_ENABLED requires S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY',
       path: ['DOCUMENTS_ENABLED'],
+    },
+  )
+  .refine(
+    (e) =>
+      !e.MAIL_CONNECTOR_ENABLED ||
+      Boolean(
+        e.S3_ENDPOINT && e.S3_REGION && e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY,
+      ),
+    {
+      message:
+        'MAIL_CONNECTOR_ENABLED requires S3_* (attachments are saved to S3): S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY',
+      path: ['MAIL_CONNECTOR_ENABLED'],
     },
   );
 

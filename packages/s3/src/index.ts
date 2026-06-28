@@ -30,8 +30,16 @@ export async function putObject(
   bucket: string,
   key: string,
   body: Uint8Array,
+  contentType?: string,
 ): Promise<void> {
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body }));
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: body,
+      ...(contentType ? { ContentType: contentType } : {}),
+    }),
+  );
 }
 
 /** Generates a presigned GET URL. The returned URL MUST NOT be logged. */
@@ -126,6 +134,8 @@ export function buildObjectKey(input: BuildObjectKeyInput): string {
 export interface DocumentStoragePort {
   buildObjectKey(input: BuildObjectKeyInput): string;
   presignPut(key: string, contentType?: string): Promise<string>;
+  /** Server-side upload of bytes the backend already holds (e.g. mail attachments). */
+  putObject(key: string, bytes: Uint8Array, contentType?: string): Promise<void>;
   headObject(key: string): Promise<ObjectHead | null>;
   getObjectBytes(key: string): Promise<Uint8Array>;
 }
@@ -143,6 +153,7 @@ export function createS3DocumentStorage(
   return {
     buildObjectKey,
     presignPut: (key, contentType) => getPresignedPutUrl(client, opts.bucket, key, contentType, expiry),
+    putObject: (key, bytes, contentType) => putObject(client, opts.bucket, key, bytes, contentType),
     headObject: (key) => headObject(client, opts.bucket, key),
     getObjectBytes: (key) => getObjectBytes(client, opts.bucket, key),
   };

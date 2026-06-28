@@ -28,6 +28,7 @@ import { routes } from './routes/index.js';
 import type { DocumentsDeps } from './documents/routes.js';
 import type { RagDeps } from './rag/routes.js';
 import type { LlmAdminDeps } from './llm/routes.js';
+import type { ConnectorsDeps } from './connectors/routes.js';
 
 export interface BuildAppDeps {
   config: AgentApiConfig;
@@ -52,6 +53,8 @@ export interface BuildAppDeps {
   rag?: RagDeps;
   /** LLM admin API deps (provider registry + gateway). Registered only when present. */
   llmAdmin?: LlmAdminDeps;
+  /** Connectors API deps (mail connector). Registered only when present. */
+  connectors?: ConnectorsDeps;
 }
 
 export async function buildApp(deps: BuildAppDeps) {
@@ -102,6 +105,7 @@ export async function buildApp(deps: BuildAppDeps) {
         ...(deps.documents ? { documents: deps.documents } : {}),
         ...(deps.rag ? { rag: deps.rag } : {}),
         ...(deps.llmAdmin ? { llmAdmin: deps.llmAdmin } : {}),
+        ...(deps.connectors ? { connectors: deps.connectors } : {}),
       });
     },
     { prefix: config.apiPrefix },
