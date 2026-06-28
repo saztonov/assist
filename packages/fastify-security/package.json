@@ -29,13 +29,15 @@
     "@fastify/helmet": "catalog:",
     "@fastify/cors": "catalog:",
     "@fastify/rate-limit": "catalog:",
-    "fastify-plugin": "catalog:"
+    "fastify-plugin": "catalog:",
+    "fastify-type-provider-zod": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "tsup": "catalog:",
     "rimraf": "catalog:",
-    "fastify": "catalog:"
+    "fastify": "catalog:",
+    "pino": "catalog:"
   }
 }

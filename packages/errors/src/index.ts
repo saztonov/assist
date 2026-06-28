@@ -8,10 +8,15 @@ export interface AppErrorOptions {
   cause?: unknown;
   /** Internal context for logs/audit only — NEVER serialized to clients. */
   meta?: Record<string, unknown>;
+  /**
+   * Client-safe structured detail (e.g. zod validation issues). Unlike `meta`
+   * this IS serialized to clients, so it must never contain secrets/PII/values.
+   */
+  publicDetails?: unknown;
 }
 
 export interface PublicErrorBody {
-  error: { code: string; message: string; correlationId: string };
+  error: { code: string; message: string; correlationId: string; details?: unknown };
 }
 
 export class AppError extends Error {
@@ -20,6 +25,7 @@ export class AppError extends Error {
   readonly publicMessage: string;
   readonly isOperational: boolean;
   readonly meta?: Record<string, unknown>;
+  readonly publicDetails?: unknown;
 
   constructor(options: AppErrorOptions) {
     super(options.publicMessage, options.cause !== undefined ? { cause: options.cause } : undefined);
@@ -29,17 +35,34 @@ export class AppError extends Error {
     this.publicMessage = options.publicMessage;
     this.isOperational = options.isOperational ?? true;
     this.meta = options.meta;
+    this.publicDetails = options.publicDetails;
   }
 
   /** Client-safe projection: no stack, no cause, no meta (ERR-2/ERR-3). */
   toPublic(correlationId: string): PublicErrorBody {
-    return { error: { code: this.code, message: this.publicMessage, correlationId } };
+    const error: PublicErrorBody['error'] = {
+      code: this.code,
+      message: this.publicMessage,
+      correlationId,
+    };
+    if (this.publicDetails !== undefined) error.details = this.publicDetails;
+    return { error };
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(publicMessage = 'Validation failed', meta?: Record<string, unknown>) {
-    super({ code: 'VALIDATION_FAILED', httpStatus: 400, publicMessage, meta });
+  constructor(
+    publicMessage = 'Validation failed',
+    meta?: Record<string, unknown>,
+    publicDetails?: unknown,
+  ) {
+    super({ code: 'VALIDATION_FAILED', httpStatus: 400, publicMessage, meta, publicDetails });
+  }
+}
+
+export class AuthnError extends AppError {
+  constructor(publicMessage = 'Authentication required', meta?: Record<string, unknown>) {
+    super({ code: 'AUTHN_REQUIRED', httpStatus: 401, publicMessage, meta });
   }
 }
 
@@ -58,6 +81,12 @@ export class NotFoundError extends AppError {
 export class ToolApprovalRequiredError extends AppError {
   constructor(publicMessage = 'Approval required', meta?: Record<string, unknown>) {
     super({ code: 'TOOL_APPROVAL_REQUIRED', httpStatus: 409, publicMessage, meta });
+  }
+}
+
+export class NotImplementedError extends AppError {
+  constructor(publicMessage = 'Not implemented', meta?: Record<string, unknown>) {
+    super({ code: 'NOT_IMPLEMENTED', httpStatus: 501, publicMessage, meta });
   }
 }
 

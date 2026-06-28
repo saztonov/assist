@@ -13,7 +13,7 @@ export function createAgentApiClient(
 ): AgentApiClient {
   return {
     async getTask(id: string): Promise<unknown> {
-      const res = await fetchImpl(`${baseUrl}/api/v1/tasks/${encodeURIComponent(id)}`);
+      const res = await fetchImpl(`${baseUrl}/api/v1/agent/tasks/${encodeURIComponent(id)}`);
       return res.json();
     },
   };

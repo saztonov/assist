@@ -1,48 +1,78 @@
 /**
- * Fastify backend — the only public HTTP surface. Validates all I/O with zod,
- * applies the shared security plugin, exposes the llm-gateway edge and task/
- * template routes. It never runs agent reasoning itself.
- *
- * Construction does NO network I/O (no DB/LLM/Temporal connection), so the
- * /health smoke test runs without environment or external services.
+ * Runtime entrypoint. Loads config, builds the app, listens, and shuts down
+ * gracefully on SIGTERM/SIGINT. Local-first: OIDC uses an injected dev JWKS when
+ * OIDC_DEV_JWKS is set, so protected routes work without a live Keycloak.
  */
-import Fastify, { type FastifyInstance } from 'fastify';
-import { securityPlugin } from '@su10/fastify-security';
-import { WorkflowTemplateSchema } from '@su10/workflow-schema';
-import { ValidationError } from '@su10/errors';
+import { createLogger, type Logger } from '@su10/logger';
+import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
+import { buildApp } from './app.js';
+import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
+import {
+  jwksHealthCheck,
+  lmStudioHealthCheck,
+  type HealthCheck,
+} from './plugins/health.js';
 
-export async function buildServer(): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
-  await app.register(securityPlugin, { corsOrigins: false, rateLimitMax: 1000 });
-
-  app.get('/health', async () => ({ status: 'ok' }));
-  app.get('/api/v1/system/info', async () => ({ name: 'agent-api', version: '0.0.0' }));
-
-  // Visual Builder persistence: validate (zod) then store via @su10/db (real impl).
-  app.post('/api/v1/workflows/templates', async (req, reply) => {
-    const parsed = WorkflowTemplateSchema.safeParse(req.body);
-    if (!parsed.success) throw new ValidationError('invalid workflow template');
-    return reply.status(201).send({ id: parsed.data.id });
-  });
-
-  // llm-gateway edge: delegates to @su10/llm (LM Studio) in the real impl.
-  app.post('/api/v1/llm/chat', async () => ({ content: 'stub' }));
-
-  // Task status: reads agent_tasks (+ Temporal workflow_id) — status source of truth.
-  app.get('/api/v1/tasks/:id', async (req) => {
-    const { id } = req.params as { id: string };
-    return { id, status: 'pending' };
-  });
-
-  return app;
+function buildOidcVerifier(config: AgentApiConfig): OidcVerifier {
+  const base: OidcConfig = {
+    issuer: config.oidc.issuer,
+    audience: config.oidc.audience,
+    clientId: config.oidc.clientId,
+    resourceClient: config.oidc.resourceClient,
+    clockToleranceSec: config.oidc.clockToleranceSec,
+  };
+  if (config.oidc.devJwks) {
+    return createOidc({ ...base, jwks: JSON.parse(config.oidc.devJwks) as OidcConfig['jwks'] });
+  }
+  return createOidc({ ...base, jwksUri: config.oidc.jwksUri });
 }
 
-const isMain = process.argv[1]?.endsWith('server.js') ?? false;
-if (isMain) {
-  buildServer()
-    .then((app) => app.listen({ host: '0.0.0.0', port: Number(process.env.HTTP_PORT ?? 8080) }))
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
+function buildHealthChecks(config: AgentApiConfig): HealthCheck[] {
+  const checks: HealthCheck[] = [];
+  if (config.oidc.jwksUri) checks.push(jwksHealthCheck(config.oidc.jwksUri));
+  if (config.readiness.llmEnabled) {
+    checks.push(
+      lmStudioHealthCheck(config.server.LLM_STUDIO_BASE_URL, config.server.LLM_STUDIO_API_TOKEN),
+    );
+  }
+  return checks;
+}
+
+async function main(): Promise<void> {
+  const config = loadAgentApiConfig();
+  const logger: Logger = createLogger('agent-api', { level: config.server.LOG_LEVEL });
+  const app = await buildApp({
+    config,
+    logger,
+    oidc: buildOidcVerifier(config),
+    healthChecks: buildHealthChecks(config),
+  });
+
+  let closing = false;
+  const shutdown = (signal: string): void => {
+    if (closing) return;
+    closing = true;
+    logger.info({ signal }, 'shutting down');
+    const force = setTimeout(() => process.exit(1), 10_000);
+    force.unref();
+    app
+      .close()
+      .then(() => process.exit(0))
+      .catch((err) => {
+        logger.error({ err }, 'error during shutdown');
+        process.exit(1);
+      });
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  await app.listen({ host: config.server.HTTP_HOST, port: config.server.HTTP_PORT });
+}
+
+const entry = process.argv[1] ?? '';
+if (entry.endsWith('server.js') || entry.endsWith('server.ts')) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

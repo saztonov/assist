@@ -3,6 +3,15 @@
  * The same REDACT_PATHS set feeds the Sentry `beforeSend` scrubber.
  */
 import pino, { type Logger as PinoLogger } from 'pino';
+import { getRequestContext } from './context.js';
+
+export {
+  type RequestContext,
+  runWithRequestContext,
+  enterRequestContext,
+  getRequestContext,
+  patchRequestContext,
+} from './context.js';
 
 /** Fields that must never appear in logs in cleartext (SEC-3). */
 export const REDACT_PATHS: string[] = [
@@ -56,6 +65,17 @@ export function createLogger(name: string, opts: CreateLoggerOptions = {}): Logg
     name,
     level: opts.level ?? process.env.LOG_LEVEL ?? 'info',
     redact: { paths: REDACT_PATHS, censor: '[Redacted]' },
+    // Auto-tag every log line emitted inside a request with its correlation ids.
+    mixin() {
+      const ctx = getRequestContext();
+      if (!ctx) return {};
+      return {
+        requestId: ctx.requestId,
+        correlationId: ctx.correlationId,
+        ...(ctx.sub ? { sub: ctx.sub } : {}),
+        ...(ctx.sourcePortal ? { sourcePortal: ctx.sourcePortal } : {}),
+      };
+    },
     ...(opts.pretty ? { transport: { target: 'pino-pretty' } } : {}),
   });
 }

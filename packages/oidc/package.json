@@ -24,7 +24,8 @@
   "dependencies": {
     "@su10/config": "workspace:*",
     "@su10/logger": "workspace:*",
-    "@su10/errors": "workspace:*"
+    "@su10/errors": "workspace:*",
+    "jose": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

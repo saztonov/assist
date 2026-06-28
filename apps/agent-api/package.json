@@ -8,14 +8,26 @@
     "build": "tsup",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "mint-dev-token": "tsx scripts/mint-dev-token.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@su10/config": "workspace:*",
     "@su10/errors": "workspace:*",
     "@su10/fastify-security": "workspace:*",
+    "@su10/llm": "workspace:*",
+    "@su10/logger": "workspace:*",
+    "@su10/oidc": "workspace:*",
+    "@su10/permissions": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
-    "fastify": "catalog:"
+    "@fastify/swagger": "catalog:",
+    "@fastify/swagger-ui": "catalog:",
+    "@fastify/under-pressure": "catalog:",
+    "fastify": "catalog:",
+    "fastify-plugin": "catalog:",
+    "fastify-type-provider-zod": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

@@ -11,6 +11,6 @@ describe('portal-agent-widgets api client', () => {
 
     const client = createAgentApiClient('/api-base', fakeFetch);
     await client.getTask('42');
-    expect(called).toBe('/api-base/api/v1/tasks/42');
+    expect(called).toBe('/api-base/api/v1/agent/tasks/42');
   });
 });
