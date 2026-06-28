@@ -56,6 +56,30 @@ const plugin: FastifyPluginAsync<HealthOptions> = async (app, opts) => {
 
 export const healthPlugin = fp(plugin, { name: 'agent-api-health', fastify: '5.x' });
 
+/**
+ * Readiness check: база данных отвечает (`SELECT 1`). Проба инжектируется
+ * (создаётся в server.ts из @su10/db), чтобы `buildApp` не выполнял I/O.
+ * Выключена по умолчанию (DB_READYCHECK_ENABLED). Строка подключения не логируется.
+ */
+export function dbHealthCheck(probe: () => Promise<void>, timeoutMs = 2000): HealthCheck {
+  return {
+    name: 'db',
+    async check() {
+      try {
+        await Promise.race([
+          probe(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), timeoutMs),
+          ),
+        ]);
+        return { status: 'ok' };
+      } catch {
+        return { status: 'down', detail: 'unreachable' };
+      }
+    },
+  };
+}
+
 /** Readiness check: remote JWKS endpoint reachable (only meaningful in prod). */
 export function jwksHealthCheck(jwksUri: string, timeoutMs = 2000): HealthCheck {
   return {

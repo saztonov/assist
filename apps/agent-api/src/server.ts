@@ -3,11 +3,13 @@
  * gracefully on SIGTERM/SIGINT. Local-first: OIDC uses an injected dev JWKS when
  * OIDC_DEV_JWKS is set, so protected routes work without a live Keycloak.
  */
+import { createDb, pingDatabase } from '@su10/db';
 import { createLogger, type Logger } from '@su10/logger';
 import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
 import { buildApp } from './app.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
 import {
+  dbHealthCheck,
   jwksHealthCheck,
   lmStudioHealthCheck,
   type HealthCheck,
@@ -34,6 +36,11 @@ function buildHealthChecks(config: AgentApiConfig): HealthCheck[] {
     checks.push(
       lmStudioHealthCheck(config.server.LLM_STUDIO_BASE_URL, config.server.LLM_STUDIO_API_TOKEN),
     );
+  }
+  if (config.readiness.dbEnabled) {
+    // Pool создаётся здесь (I/O-точка), не в buildApp. По умолчанию выключено.
+    const db = createDb(config.server.DATABASE_URL);
+    checks.push(dbHealthCheck(() => pingDatabase(db)));
   }
   return checks;
 }

@@ -4,6 +4,9 @@
  */
 import type { Subject } from '@su10/permissions';
 
+// Контракт RAG-запроса (ACL-before-retrieval, fail-closed).
+export * from './ragQuery.js';
+
 export interface RagDocument {
   id: string;
   aclTag: string;

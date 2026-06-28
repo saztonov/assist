@@ -191,6 +191,9 @@ importers:
       '@su10/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@su10/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@su10/errors':
         specifier: workspace:*
         version: link:../../packages/errors
@@ -419,6 +422,9 @@ importers:
       pg:
         specifier: 'catalog:'
         version: 8.22.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@su10/tsconfig':
         specifier: workspace:*
@@ -713,6 +719,9 @@ importers:
       '@su10/s3':
         specifier: workspace:*
         version: link:../s3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@su10/tsconfig':
         specifier: workspace:*

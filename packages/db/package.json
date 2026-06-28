@@ -26,7 +26,8 @@
     "@su10/logger": "workspace:*",
     "@su10/errors": "workspace:*",
     "drizzle-orm": "catalog:",
-    "pg": "catalog:"
+    "pg": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@su10/tsconfig": "workspace:*",

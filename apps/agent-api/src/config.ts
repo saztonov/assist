@@ -39,6 +39,7 @@ export const agentApiEnvSchema = z
     OIDC_CLOCK_TOLERANCE_S: z.coerce.number().int().nonnegative().default(5),
 
     LLM_READYCHECK_ENABLED: boolish.default('false'),
+    DB_READYCHECK_ENABLED: boolish.default('false'),
   })
   .refine((e) => Boolean(e.OIDC_JWKS_URI) || Boolean(e.OIDC_DEV_JWKS), {
     message: 'either OIDC_JWKS_URI (prod) or OIDC_DEV_JWKS (local) is required',
@@ -65,7 +66,7 @@ export interface AgentApiConfig {
     devJwks?: string;
     clockToleranceSec: number;
   };
-  readiness: { llmEnabled: boolean };
+  readiness: { llmEnabled: boolean; dbEnabled: boolean };
 }
 
 /** Pure mapping env → config. Throws on cross-field policy violations. */
@@ -91,7 +92,7 @@ export function buildAgentApiConfig(server: ServerConfig, env: AgentApiEnv): Age
       devJwks: env.OIDC_DEV_JWKS,
       clockToleranceSec: env.OIDC_CLOCK_TOLERANCE_S,
     },
-    readiness: { llmEnabled: env.LLM_READYCHECK_ENABLED },
+    readiness: { llmEnabled: env.LLM_READYCHECK_ENABLED, dbEnabled: env.DB_READYCHECK_ENABLED },
   };
 }
 

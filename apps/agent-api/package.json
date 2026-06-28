@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@su10/config": "workspace:*",
+    "@su10/db": "workspace:*",
     "@su10/errors": "workspace:*",
     "@su10/fastify-security": "workspace:*",
     "@su10/llm": "workspace:*",

@@ -31,6 +31,7 @@ describe('agentApiEnvSchema', () => {
     expect(parsed.OPENAPI_ENABLED).toBe(true);
     expect(parsed.OPENAPI_UI_ENABLED).toBe(false);
     expect(parsed.LLM_READYCHECK_ENABLED).toBe(false);
+    expect(parsed.DB_READYCHECK_ENABLED).toBe(false);
   });
 
   it('rejects an invalid OIDC_ISSUER url', () => {
@@ -74,5 +75,6 @@ describe('loadAgentApiConfig', () => {
     expect(cfg.apiPrefix).toBe('/api/v1');
     expect(cfg.oidc.issuer).toBe('https://auth.su10.ru/realms/portal');
     expect(cfg.readiness.llmEnabled).toBe(false);
+    expect(cfg.readiness.dbEnabled).toBe(false);
   });
 });
