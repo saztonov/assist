@@ -1,18 +1,13 @@
-import { Tabs, Typography } from 'antd';
 import { ThemeProvider } from '@su10/ui';
-import { ModelsPage } from './pages/admin/ModelsPage';
-import { BuilderPage } from './pages/builder/BuilderPage';
+import { AuthProvider } from './auth/AuthProvider';
+import { AppShell } from './app/AppShell';
 
-export function App() {
+export function App(): JSX.Element {
   return (
     <ThemeProvider>
-      <Typography.Title level={3}>AI/Agent Portal</Typography.Title>
-      <Tabs
-        items={[
-          { key: 'builder', label: 'Конструктор', children: <BuilderPage /> },
-          { key: 'models', label: 'Модели (admin)', children: <ModelsPage /> },
-        ]}
-      />
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

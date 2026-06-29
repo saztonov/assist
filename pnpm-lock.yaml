@@ -6,6 +6,9 @@ settings:
 
 catalogs:
   default:
+    '@ant-design/icons':
+      specifier: ^5.5.0
+      version: 5.6.1
     '@aws-sdk/client-s3':
       specifier: ^3.700.0
       version: 3.1075.0
@@ -120,6 +123,9 @@ catalogs:
     nodemailer:
       specifier: ^6.9.0
       version: 6.10.1
+    oidc-client-ts:
+      specifier: ^3.1.0
+      version: 3.5.0
     pg:
       specifier: ^8.13.0
       version: 8.22.0
@@ -309,6 +315,9 @@ importers:
 
   apps/ai-portal-web:
     dependencies:
+      '@ant-design/icons':
+        specifier: 'catalog:'
+        version: 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@su10/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -330,6 +339,9 @@ importers:
       antd:
         specifier: 'catalog:'
         version: 5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      oidc-client-ts:
+        specifier: 'catalog:'
+        version: 3.5.0
       react:
         specifier: 'catalog:'
         version: 18.3.1
@@ -4242,6 +4254,10 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
@@ -4492,6 +4508,10 @@ packages:
 
   obliterator@2.0.5:
     resolution: {integrity: sha512-42CPE9AhahZRsMNslczq0ctAEtqk8Eka26QofnqC346BZdHDySk3LWka23LI7ULIw11NmltpiLagIq8gBozxTw==}
+
+  oidc-client-ts@3.5.0:
+    resolution: {integrity: sha512-l2q8l9CTCTOlbX+AnK4p3M+4CEpKpyQhle6blQkdFhm0IsBqsxm15bYaSa11G7pWdsYr6epdsRZxJpCyCRbT8A==}
+    engines: {node: '>=18'}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -8722,6 +8742,8 @@ snapshots:
 
   json5@2.2.3: {}
 
+  jwt-decode@4.0.0: {}
+
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -8924,6 +8946,10 @@ snapshots:
   object-assign@4.1.1: {}
 
   obliterator@2.0.5: {}
+
+  oidc-client-ts@3.5.0:
+    dependencies:
+      jwt-decode: 4.0.0
 
   on-exit-leak-free@2.1.2: {}
 

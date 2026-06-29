@@ -4,7 +4,9 @@
  * OIDC_DEV_JWKS is set, so protected routes work without a live Keycloak.
  */
 import {
+  createAgentApprovalRepo,
   createAgentTaskRepo,
+  createChatRepo,
   createConnectorRepo,
   createDb,
   createDbAuditSink,
@@ -317,6 +319,9 @@ async function main(): Promise<void> {
     toolTestBroker,
     ...(documents ? { documents } : {}),
     ...(mail ? { connectors: mail.connectors } : {}),
+    // Chat (mock-агент) и Approvals (этап 12) — поверх БД, без внешних зависимостей.
+    chat: { chatRepo: createChatRepo(db), auditSink },
+    approvals: { approvalRepo: createAgentApprovalRepo(db), auditSink },
     rag: { ragService, llm: llmGateway, auditSink },
     llmAdmin: { providerRepo: createProviderRepo(db), llm: llmGateway, auditSink },
   });

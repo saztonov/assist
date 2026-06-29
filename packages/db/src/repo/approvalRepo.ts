@@ -1,9 +1,14 @@
-/** Доступ к approvals/approval_events (для базовых tools approval.request/resolve). */
-import { eq } from 'drizzle-orm';
+/** Доступ к approvals/approval_events (для базовых tools approval.request/resolve
+ * и REST /approvals). Резолв high-risk решения атомарен и ограничен `pending`,
+ * чтобы повторный/гоночный approve|reject не перезаписал уже принятое решение. */
+import { and, desc, eq } from 'drizzle-orm';
 import { approvals, approvalEvents } from '../schema/approvals.js';
 import type { Database } from '../index.js';
 
 export type ApprovalRow = typeof approvals.$inferSelect;
+
+export type ApprovalDecision = 'approved' | 'rejected';
+export type ApprovalStatus = 'pending' | ApprovalDecision;
 
 export interface CreateApprovalInput {
   taskId?: string | null;
@@ -18,15 +23,25 @@ export interface CreateApprovalInput {
 
 export interface ResolveApprovalInput {
   approvalId: string;
-  decision: 'approved' | 'rejected';
+  decision: ApprovalDecision;
   decidedBy: string;
   reason?: string | null;
 }
 
+export interface ListApprovalsFilter {
+  /** Скоуп для не-admin: только свои (по subjectId). */
+  subjectId: string;
+  isAdmin: boolean;
+  status?: ApprovalStatus;
+  limit: number;
+}
+
 export interface AgentApprovalRepo {
   create(input: CreateApprovalInput): Promise<ApprovalRow>;
+  /** Атомарно резолвит ТОЛЬКО `pending`. Если не найдено или уже решено → undefined. */
   resolve(input: ResolveApprovalInput): Promise<ApprovalRow | undefined>;
   getById(id: string): Promise<ApprovalRow | undefined>;
+  listForSubject(filter: ListApprovalsFilter): Promise<ApprovalRow[]>;
 }
 
 export function createAgentApprovalRepo(db: Database): AgentApprovalRepo {
@@ -58,6 +73,7 @@ export function createAgentApprovalRepo(db: Database): AgentApprovalRepo {
 
     async resolve(input) {
       return db.transaction(async (tx) => {
+        // Guard `status='pending'`: при гонке/повторе UPDATE затронет 0 строк.
         const [row] = await tx
           .update(approvals)
           .set({
@@ -67,7 +83,7 @@ export function createAgentApprovalRepo(db: Database): AgentApprovalRepo {
             reason: input.reason ?? null,
             updatedAt: new Date(),
           })
-          .where(eq(approvals.id, input.approvalId))
+          .where(and(eq(approvals.id, input.approvalId), eq(approvals.status, 'pending')))
           .returning();
         if (!row) return undefined;
         await tx.insert(approvalEvents).values({
@@ -83,6 +99,19 @@ export function createAgentApprovalRepo(db: Database): AgentApprovalRepo {
     async getById(id) {
       const [row] = await db.select().from(approvals).where(eq(approvals.id, id)).limit(1);
       return row;
+    },
+
+    async listForSubject(filter) {
+      const conds = [];
+      if (!filter.isAdmin) conds.push(eq(approvals.subjectId, filter.subjectId));
+      if (filter.status) conds.push(eq(approvals.status, filter.status));
+      const where = conds.length === 0 ? undefined : conds.length === 1 ? conds[0] : and(...conds);
+      const q = db
+        .select()
+        .from(approvals)
+        .orderBy(desc(approvals.createdAt), desc(approvals.id))
+        .limit(filter.limit);
+      return where ? q.where(where) : q;
     },
   };
 }

@@ -35,6 +35,16 @@ export const MAIL_ACTIONS = {
   connectionTest: 'connector.mail.test',
 } as const;
 
+export const CHAT_ACTIONS = {
+  sessionCreate: 'chat.session.create',
+  messagePost: 'chat.message.post',
+} as const;
+
+export const APPROVAL_ACTIONS = {
+  approve: 'approval.approve',
+  reject: 'approval.reject',
+} as const;
+
 export const LLM_ADMIN_ACTIONS = {
   providerCreate: 'llm.provider.create',
   providerUpdate: 'llm.provider.update',

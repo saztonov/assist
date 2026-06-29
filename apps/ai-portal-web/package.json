@@ -11,6 +11,7 @@
     "clean": "rimraf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@ant-design/icons": "catalog:",
     "@su10/config": "workspace:*",
     "@su10/errors": "workspace:*",
     "@su10/portal-agent-widgets": "workspace:*",
@@ -18,6 +19,7 @@
     "@su10/workflow-schema": "workspace:*",
     "@xyflow/react": "catalog:",
     "antd": "catalog:",
+    "oidc-client-ts": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

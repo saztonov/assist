@@ -29,6 +29,8 @@ import type { DocumentsDeps } from './documents/routes.js';
 import type { RagDeps } from './rag/routes.js';
 import type { LlmAdminDeps } from './llm/routes.js';
 import type { ConnectorsDeps } from './connectors/routes.js';
+import type { AgentChatDeps } from './agent-chat/routes.js';
+import type { ApprovalsDeps } from './approvals/routes.js';
 
 export interface BuildAppDeps {
   config: AgentApiConfig;
@@ -57,6 +59,10 @@ export interface BuildAppDeps {
   llmAdmin?: LlmAdminDeps;
   /** Connectors API deps (mail connector). Registered only when present. */
   connectors?: ConnectorsDeps;
+  /** Chat API deps (этап 12) — mock-агент поверх chatRepo. */
+  chat?: AgentChatDeps;
+  /** Approvals API deps (этап 12) — поверх approvalRepo. */
+  approvals?: ApprovalsDeps;
 }
 
 export async function buildApp(deps: BuildAppDeps) {
@@ -108,6 +114,8 @@ export async function buildApp(deps: BuildAppDeps) {
         ...(deps.rag ? { rag: deps.rag } : {}),
         ...(deps.llmAdmin ? { llmAdmin: deps.llmAdmin } : {}),
         ...(deps.connectors ? { connectors: deps.connectors } : {}),
+        ...(deps.chat ? { chat: deps.chat } : {}),
+        ...(deps.approvals ? { approvals: deps.approvals } : {}),
         ...(deps.templateRepo
           ? {
               workflowTemplates: {

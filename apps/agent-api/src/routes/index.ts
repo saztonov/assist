@@ -13,6 +13,8 @@ import { documentsRoutes, type DocumentsDeps } from '../documents/routes.js';
 import { ragRoutes, type RagDeps } from '../rag/routes.js';
 import { llmAdminRoutes, type LlmAdminDeps } from '../llm/routes.js';
 import { connectorsRoutes, type ConnectorsDeps } from '../connectors/routes.js';
+import { agentChatRoutes, type AgentChatDeps } from '../agent-chat/routes.js';
+import { approvalsRoutes, type ApprovalsDeps } from '../approvals/routes.js';
 import {
   workflowTemplatesRoutes,
   type WorkflowTemplatesDeps,
@@ -34,6 +36,10 @@ export type RouteDeps = AgentTasksDeps &
     llmAdmin?: LlmAdminDeps;
     /** Connectors API — registered only when the mail connector is enabled. */
     connectors?: ConnectorsDeps;
+    /** Chat API (этап 12) — mock-агент поверх chatRepo. */
+    chat?: AgentChatDeps;
+    /** Approvals API (этап 12) — поверх approvalRepo. */
+    approvals?: ApprovalsDeps;
     /** Workflow Templates API — registered only when the template repo is wired. */
     workflowTemplates?: WorkflowTemplatesDeps;
   };
@@ -82,6 +88,18 @@ export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
   if (deps.connectors) {
     await app.register(connectorsRoutes, deps.connectors);
     implemented.add('/connectors');
+  }
+
+  // Chat API (этап 12) — mock-агент. Подключается, когда передан chatRepo.
+  if (deps.chat) {
+    await app.register(agentChatRoutes, deps.chat);
+    implemented.add('/agent/chat');
+  }
+
+  // Approvals API (этап 12) — подключается, когда передан approvalRepo.
+  if (deps.approvals) {
+    await app.register(approvalsRoutes, deps.approvals);
+    implemented.add('/approvals');
   }
 
   // Workflow Templates API (этап 11) — только если подключён templateRepo.
