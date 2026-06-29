@@ -15,6 +15,7 @@ import { llmAdminRoutes, type LlmAdminDeps } from '../llm/routes.js';
 import { connectorsRoutes, type ConnectorsDeps } from '../connectors/routes.js';
 import { agentChatRoutes, type AgentChatDeps } from '../agent-chat/routes.js';
 import { approvalsRoutes, type ApprovalsDeps } from '../approvals/routes.js';
+import { mcpRegistryRoutes, type McpRegistryDeps } from '../mcp-registry/routes.js';
 import {
   workflowTemplatesRoutes,
   type WorkflowTemplatesDeps,
@@ -42,6 +43,8 @@ export type RouteDeps = AgentTasksDeps &
     approvals?: ApprovalsDeps;
     /** Workflow Templates API — registered only when the template repo is wired. */
     workflowTemplates?: WorkflowTemplatesDeps;
+    /** MCP registry API — registered only when MCP deps are wired. */
+    mcp?: McpRegistryDeps;
   };
 
 const BASE_IMPLEMENTED_PREFIXES = ['/agent/tasks', '/tools'] as const;
@@ -106,6 +109,12 @@ export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
   if (deps.workflowTemplates) {
     await app.register(workflowTemplatesRoutes, deps.workflowTemplates);
     implemented.add('/workflow-templates');
+  }
+
+  // MCP Registry API — только при наличии MCP deps (repo + client + registry).
+  if (deps.mcp) {
+    await app.register(mcpRegistryRoutes, deps.mcp);
+    implemented.add('/mcp');
   }
 
   // Остальные группы — представительные 501-заглушки (заменяются в след. этапах).

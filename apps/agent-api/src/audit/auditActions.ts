@@ -45,6 +45,14 @@ export const APPROVAL_ACTIONS = {
   reject: 'approval.reject',
 } as const;
 
+export const MCP_REGISTRY_ACTIONS = {
+  serverCreate: 'mcp.server.create',
+  healthCheck: 'mcp.server.health_check',
+  snapshotTools: 'mcp.server.snapshot_tools',
+  toolEnable: 'mcp.tool.enable',
+  toolDisable: 'mcp.tool.disable',
+} as const;
+
 export const LLM_ADMIN_ACTIONS = {
   providerCreate: 'llm.provider.create',
   providerUpdate: 'llm.provider.update',

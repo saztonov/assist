@@ -257,6 +257,9 @@ importers:
       '@su10/mail-connector':
         specifier: workspace:*
         version: link:../../packages/mail-connector
+      '@su10/mcp':
+        specifier: workspace:*
+        version: link:../../packages/mcp
       '@su10/oidc':
         specifier: workspace:*
         version: link:../../packages/oidc

@@ -31,6 +31,7 @@ import type { LlmAdminDeps } from './llm/routes.js';
 import type { ConnectorsDeps } from './connectors/routes.js';
 import type { AgentChatDeps } from './agent-chat/routes.js';
 import type { ApprovalsDeps } from './approvals/routes.js';
+import type { McpRegistryDeps } from './mcp-registry/routes.js';
 
 export interface BuildAppDeps {
   config: AgentApiConfig;
@@ -63,6 +64,8 @@ export interface BuildAppDeps {
   chat?: AgentChatDeps;
   /** Approvals API deps (этап 12) — поверх approvalRepo. */
   approvals?: ApprovalsDeps;
+  /** MCP registry API deps. Registered only when present. */
+  mcp?: McpRegistryDeps;
 }
 
 export async function buildApp(deps: BuildAppDeps) {
@@ -116,6 +119,7 @@ export async function buildApp(deps: BuildAppDeps) {
         ...(deps.connectors ? { connectors: deps.connectors } : {}),
         ...(deps.chat ? { chat: deps.chat } : {}),
         ...(deps.approvals ? { approvals: deps.approvals } : {}),
+        ...(deps.mcp ? { mcp: deps.mcp } : {}),
         ...(deps.templateRepo
           ? {
               workflowTemplates: {

@@ -62,6 +62,7 @@ SELECT extname FROM pg_extension WHERE extname IN ('vector', 'pg_trgm');
 | `0004_platform.sql` | audit_events, outbox_events, postgres_jobs, rag_indexes, rag_queries | да |
 | `0005_rag.sql` | `CREATE SCHEMA rag`; corpus_chunks(+generated tsvector), corpus_embeddings_768/_1536, index_runs, eval_feedback, индексы | да |
 | `0006_rag_hnsw.no-tx.sql` | HNSW-индексы (`CREATE INDEX CONCURRENTLY`) — по одному на каждую таблицу эмбеддингов | **нет** |
+| `0007_mcp_registry.sql` | additive: mcp_servers (+tools_snapshot_hash/_at), mcp_server_health_checks | да |
 
 `0006_rag_hnsw.no-tx.sql` — **опциональный/отложенный**: `CREATE INDEX CONCURRENTLY` нельзя
 выполнять внутри транзакции; точный векторный поиск работает и без HNSW. Для локальных

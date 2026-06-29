@@ -68,6 +68,7 @@ export * from './repo/ragChunkRepo.js';
 export * from './repo/ragQueryRepo.js';
 export * from './repo/providerRepo.js';
 export * from './repo/connectorRepo.js';
+export * from './repo/mcpRegistryRepo.js';
 export * from './audit/dbAuditSink.js';
 export * from './audit/llmCallSink.js';
 

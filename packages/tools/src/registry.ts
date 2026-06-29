@@ -65,6 +65,16 @@ export class ToolRegistry {
     this.tools.set(tool.name, tool);
   }
 
+  /** Удаляет инструмент из реестра (для runtime enable/disable динамических tools). */
+  unregister(name: string): boolean {
+    return this.tools.delete(name);
+  }
+
+  /** Зарегистрирован ли инструмент с таким именем. */
+  has(name: string): boolean {
+    return this.tools.has(name);
+  }
+
   get(name: string): ToolDefinition | undefined {
     return this.tools.get(name);
   }

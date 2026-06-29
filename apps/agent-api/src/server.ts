@@ -8,6 +8,7 @@ import {
   createAgentTaskRepo,
   createChatRepo,
   createConnectorRepo,
+  createMcpRegistryRepo,
   createDb,
   createDbAuditSink,
   createDbLlmCallRecorder,
@@ -40,6 +41,7 @@ import {
   type LlmGatewayService,
 } from '@su10/llm';
 import { createPgRagRepository, createRagService, ragSearchTool } from '@su10/rag';
+import { InMemoryMcpClient } from '@su10/mcp';
 import type { AuditSink } from '@su10/audit';
 import { createLogger, type Logger } from '@su10/logger';
 import { createOidc, type OidcConfig, type OidcVerifier } from '@su10/oidc';
@@ -51,6 +53,7 @@ import {
 } from '@su10/tool-base';
 import type { TemporalPort } from '@su10/workflow-engine';
 import { buildApp } from './app.js';
+import { syncEnabledMcpTools, type McpRegistryDeps } from './mcp-registry/bridge.js';
 import type { DocumentsDeps, DocumentProcessingPort } from './documents/routes.js';
 import type { ConnectorsDeps } from './connectors/routes.js';
 import { loadAgentApiConfig, type AgentApiConfig } from './config.js';
@@ -306,6 +309,16 @@ async function main(): Promise<void> {
   // `rag.search` tool shares the SAME ragService as `/rag/search` (one ACL path).
   toolRegistry.register(ragSearchTool({ ragService }));
 
+  // MCP registry: источник истины — PostgreSQL. MCP-клиент в v1 — stub-порт
+  // (реальный сетевой клиент — отдельный этап развёртывания). Включённые MCP
+  // tools регистрируются в общий toolRegistry и исполняются через Tool Broker.
+  const mcp: McpRegistryDeps = {
+    mcpRepo: createMcpRegistryRepo(db),
+    mcpClient: new InMemoryMcpClient(),
+    toolRegistry,
+    auditSink,
+  };
+
   const app = await buildApp({
     config,
     logger,
@@ -324,7 +337,18 @@ async function main(): Promise<void> {
     approvals: { approvalRepo: createAgentApprovalRepo(db), auditSink },
     rag: { ragService, llm: llmGateway, auditSink },
     llmAdmin: { providerRepo: createProviderRepo(db), llm: llmGateway, auditSink },
+    mcp,
   });
+
+  // Startup-sync: восстановить включённые MCP tools из БД в ToolRegistry. Источник
+  // истины — PostgreSQL; enable/disable в runtime отражается только в текущем
+  // процессе (multi-process — через рестарт; см. docs).
+  try {
+    const count = await syncEnabledMcpTools(mcp);
+    logger.info({ count }, 'mcp: registered enabled tools from registry');
+  } catch (err) {
+    logger.error({ err }, 'mcp: failed to sync enabled tools at startup');
+  }
 
   let closing = false;
   const shutdown = (signal: string): void => {

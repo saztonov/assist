@@ -61,6 +61,16 @@ export function createInMemoryBaseToolDeps(): InMemoryBaseTools {
     async getById(id) {
       return approvals.find((a) => a.id === id);
     },
+    async listForSubject(filter) {
+      let rows = [...approvals];
+      if (!filter.isAdmin) rows = rows.filter((a) => a.subjectId === filter.subjectId);
+      if (filter.status) rows = rows.filter((a) => a.status === filter.status);
+      rows.sort((a, b) => {
+        const d = b.createdAt.getTime() - a.createdAt.getTime();
+        return d !== 0 ? d : b.id.localeCompare(a.id);
+      });
+      return rows.slice(0, filter.limit);
+    },
   };
 
   const artifactRepo: ArtifactRepo = {
