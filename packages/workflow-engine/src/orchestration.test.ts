@@ -148,6 +148,25 @@ describe('runVisualTemplate', () => {
     expect(res).toEqual({ status: 'failed', errorCode: 'APPROVAL_REJECTED' });
   });
 
+  it('ignores UI fields (position/label) — same calls (engine-ignored)', async () => {
+    const { env, calls, statuses } = makeEnv();
+    const { parsed } = templateInput([
+      { id: 'n0', type: 'manual_trigger', label: 'Старт', position: { x: 0, y: 0 }, params: {} },
+      {
+        id: 'n1',
+        type: 'tool',
+        toolRef: 'task.get_status',
+        label: 'Статус',
+        position: { x: 100, y: 0 },
+        params: { taskId: 't1' },
+      },
+    ]);
+    const res = await runVisualTemplate(parsed, env);
+    expect(res.status).toBe('completed');
+    expect(calls).toEqual(['tool:task.get_status']);
+    expect(statuses.map((s) => s.to)).toEqual(['running', 'completed']);
+  });
+
   it('cancel stops mid-template', async () => {
     const { env } = makeEnv({ cancelBefore: true });
     const { parsed } = templateInput([{ id: 'n1', type: 'tool', toolRef: 'x', params: {} }]);

@@ -60,6 +60,7 @@ export * from './repo/toolRepo.js';
 export * from './repo/agentRunRepo.js';
 export * from './repo/agentRunRepo.memory.js';
 export * from './repo/documentRepo.js';
+export * from './repo/workflowTemplateRepo.js';
 export * from './repo/ragChunkRepo.js';
 export * from './repo/ragQueryRepo.js';
 export * from './repo/providerRepo.js';

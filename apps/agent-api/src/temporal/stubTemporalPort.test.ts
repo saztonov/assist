@@ -10,6 +10,19 @@ describe('stubTemporalPort', () => {
     expect(p.started.has('agent-task-t-1')).toBe(true);
   });
 
+  it('start с template фиксируется как visual; без template — нет', async () => {
+    const p = createStubTemporalPort();
+    const visual = await p.startAgentTaskWorkflow({
+      taskId: 'v-1',
+      taskQueue: 'q',
+      template: { id: 'd', name: 'n', version: 1, nodes: [], edges: [] },
+    });
+    const generic = await p.startAgentTaskWorkflow({ taskId: 'g-1', taskQueue: 'q' });
+    expect(p.startedVisual.has(visual.workflowId)).toBe(true);
+    expect(p.startedVisual.has(generic.workflowId)).toBe(false);
+    expect(p.started.has(visual.workflowId)).toBe(true);
+  });
+
   it('failStart → UpstreamError', async () => {
     const p = createStubTemporalPort({ failStart: true });
     await expect(p.startAgentTaskWorkflow({ taskId: 't', taskQueue: 'q' })).rejects.toBeInstanceOf(

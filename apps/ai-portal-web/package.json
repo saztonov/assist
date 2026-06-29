@@ -16,6 +16,7 @@
     "@su10/portal-agent-widgets": "workspace:*",
     "@su10/ui": "workspace:*",
     "@su10/workflow-schema": "workspace:*",
+    "@xyflow/react": "catalog:",
     "antd": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

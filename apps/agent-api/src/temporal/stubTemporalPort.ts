@@ -18,18 +18,23 @@ export interface StubTemporalPortOptions {
 export interface StubTemporalPort extends TemporalPort {
   readonly started: ReadonlySet<string>;
   readonly cancelled: ReadonlySet<string>;
+  /** workflowId-ы, запущенные как visual-template (передан `template`). */
+  readonly startedVisual: ReadonlySet<string>;
 }
 
 export function createStubTemporalPort(opts: StubTemporalPortOptions = {}): StubTemporalPort {
   const started = new Set<string>();
   const cancelled = new Set<string>();
+  const startedVisual = new Set<string>();
   return {
     started,
     cancelled,
-    async startAgentTaskWorkflow({ taskId }) {
+    startedVisual,
+    async startAgentTaskWorkflow({ taskId, template }) {
       if (opts.failStart) throw new UpstreamError('temporal unavailable (stub)');
       const workflowId = `agent-task-${taskId}`;
       started.add(workflowId);
+      if (template) startedVisual.add(workflowId);
       return { workflowId };
     },
     async signalCancel(workflowId) {

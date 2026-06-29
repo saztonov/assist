@@ -6,6 +6,7 @@
  * на шаге 6 (Temporal worker foundation). Так `buildApp` остаётся без I/O, а
  * локальные проверки не требуют живого кластера.
  */
+import type { WorkflowTemplate } from '@su10/workflow-schema';
 
 export interface StartAgentTaskWorkflowArgs {
   taskId: string;
@@ -17,6 +18,13 @@ export interface StartAgentTaskWorkflowArgs {
   prompt?: string;
   agentName?: string;
   requireApproval?: boolean;
+  /**
+   * Разрешённое определение шаблона (visual builder). Если задано — стартует
+   * `visual_template_generic_workflow` с этим определением; иначе —
+   * `generic_agent_task_workflow`. `templateId` остаётся метаданными корреляции.
+   * Порт DB-I/O НЕ делает: определение резолвит вызывающая сторона (test-run).
+   */
+  template?: WorkflowTemplate;
 }
 
 export interface StartDocumentProcessingArgs {

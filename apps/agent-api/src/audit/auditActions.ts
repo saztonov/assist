@@ -7,6 +7,13 @@ export const AGENT_TASK_ACTIONS = {
   cancel: 'agent_task.cancel',
 } as const;
 
+export const WORKFLOW_TEMPLATE_ACTIONS = {
+  create: 'workflow_template.create',
+  saveDraft: 'workflow_template.save_draft',
+  publish: 'workflow_template.publish',
+  testRun: 'workflow_template.test_run',
+} as const;
+
 export const DOCUMENT_ACTIONS = {
   uploadSession: 'document.upload_session',
   confirm: 'document.confirm',

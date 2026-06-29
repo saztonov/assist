@@ -13,6 +13,10 @@ import { documentsRoutes, type DocumentsDeps } from '../documents/routes.js';
 import { ragRoutes, type RagDeps } from '../rag/routes.js';
 import { llmAdminRoutes, type LlmAdminDeps } from '../llm/routes.js';
 import { connectorsRoutes, type ConnectorsDeps } from '../connectors/routes.js';
+import {
+  workflowTemplatesRoutes,
+  type WorkflowTemplatesDeps,
+} from '../workflow-templates/routes.js';
 
 export interface RouteGroup {
   prefix: string;
@@ -30,6 +34,8 @@ export type RouteDeps = AgentTasksDeps &
     llmAdmin?: LlmAdminDeps;
     /** Connectors API — registered only when the mail connector is enabled. */
     connectors?: ConnectorsDeps;
+    /** Workflow Templates API — registered only when the template repo is wired. */
+    workflowTemplates?: WorkflowTemplatesDeps;
   };
 
 const BASE_IMPLEMENTED_PREFIXES = ['/agent/tasks', '/tools'] as const;
@@ -37,6 +43,7 @@ const BASE_IMPLEMENTED_PREFIXES = ['/agent/tasks', '/tools'] as const;
 export const ROUTE_GROUPS: readonly RouteGroup[] = [
   { prefix: '/agent/tasks', tag: 'agent-tasks' },
   { prefix: '/agent/chat', tag: 'agent-chat' },
+  { prefix: '/workflow-templates', tag: 'workflow-templates' },
   { prefix: '/documents', tag: 'documents' },
   { prefix: '/rag', tag: 'rag' },
   { prefix: '/tools', tag: 'tools' },
@@ -75,6 +82,12 @@ export const routes: FastifyPluginAsync<RouteDeps> = async (app, deps) => {
   if (deps.connectors) {
     await app.register(connectorsRoutes, deps.connectors);
     implemented.add('/connectors');
+  }
+
+  // Workflow Templates API (этап 11) — только если подключён templateRepo.
+  if (deps.workflowTemplates) {
+    await app.register(workflowTemplatesRoutes, deps.workflowTemplates);
+    implemented.add('/workflow-templates');
   }
 
   // Остальные группы — представительные 501-заглушки (заменяются в след. этапах).

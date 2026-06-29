@@ -18,7 +18,7 @@ import { securityPlugin, authPlugin } from '@su10/fastify-security';
 import type { Logger } from '@su10/logger';
 import type { OidcVerifier } from '@su10/oidc';
 import type { AuditSink } from '@su10/audit';
-import type { AgentTaskRepo } from '@su10/db';
+import type { AgentTaskRepo, WorkflowTemplateRepo } from '@su10/db';
 import type { ToolBroker, ToolRegistry } from '@su10/tools';
 import type { TemporalPort } from '@su10/workflow-engine';
 import type { AgentApiConfig } from './config.js';
@@ -39,6 +39,8 @@ export interface BuildAppDeps {
   healthChecks?: HealthCheck[];
   /** AgentTask lifecycle repository (injected; tests pass an in-memory fake). */
   taskRepo: AgentTaskRepo;
+  /** Workflow Templates repository (этап 11). Registered only when present. */
+  templateRepo?: WorkflowTemplateRepo;
   /** Temporal orchestration port (stub locally; real client added in step 6). */
   temporal: TemporalPort;
   /** Audit sink (DB-backed in server.ts; in-memory in tests). */
@@ -106,6 +108,18 @@ export async function buildApp(deps: BuildAppDeps) {
         ...(deps.rag ? { rag: deps.rag } : {}),
         ...(deps.llmAdmin ? { llmAdmin: deps.llmAdmin } : {}),
         ...(deps.connectors ? { connectors: deps.connectors } : {}),
+        ...(deps.templateRepo
+          ? {
+              workflowTemplates: {
+                templateRepo: deps.templateRepo,
+                taskRepo: deps.taskRepo,
+                temporal: deps.temporal,
+                auditSink: deps.auditSink,
+                toolRegistry: deps.toolRegistry,
+                taskQueue: config.server.TEMPORAL_TASK_QUEUE,
+              },
+            }
+          : {}),
       });
     },
     { prefix: config.apiPrefix },

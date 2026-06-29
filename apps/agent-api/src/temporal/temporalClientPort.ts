@@ -10,6 +10,8 @@ import { UpstreamError } from '@su10/errors';
 import {
   DocumentProcessingInputSchema,
   GenericAgentTaskInputSchema,
+  VisualTemplateInputSchema,
+  assertNoSecretsInPayload,
   CANCEL_SIGNAL,
   type StartAgentTaskWorkflowArgs,
   type StartDocumentProcessingArgs,
@@ -35,13 +37,38 @@ export async function createTemporalClientPort(
 
   return {
     async startAgentTaskWorkflow(args: StartAgentTaskWorkflowArgs) {
+      // Единый детерминированный id для visual и generic путей: один task = один
+      // workflow, корректный target для signalCancel.
       const workflowId = `agent-task-${args.taskId}`;
+      const subject = args.subject ?? { id: 'system', roles: [] };
+
+      // Visual builder: стартуем visual_template_generic_workflow с определением.
+      if (args.template) {
+        const input = VisualTemplateInputSchema.parse({
+          taskId: args.taskId,
+          subject,
+          template: args.template,
+        });
+        // params узлов авторские → defense-in-depth против утечки секретов в историю.
+        assertNoSecretsInPayload(input);
+        try {
+          const handle = await client.workflow.start('visual_template_generic_workflow', {
+            taskQueue: args.taskQueue,
+            workflowId,
+            args: [input],
+          });
+          return { workflowId: handle.workflowId };
+        } catch {
+          throw new UpstreamError('failed to start visual template workflow');
+        }
+      }
+
       const input = GenericAgentTaskInputSchema.parse({
         taskId: args.taskId,
         ...(args.templateId ? { templateId: args.templateId } : {}),
         ...(args.agentName ? { agentName: args.agentName } : {}),
         ...(args.prompt ? { prompt: args.prompt } : {}),
-        subject: args.subject ?? { id: 'system', roles: [] },
+        subject,
         requireApproval: args.requireApproval ?? false,
       });
       try {

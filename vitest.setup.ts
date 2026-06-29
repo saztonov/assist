@@ -24,4 +24,15 @@ if (typeof window !== 'undefined') {
   const realGetComputedStyle = window.getComputedStyle.bind(window);
   window.getComputedStyle = ((elt: Element) =>
     realGetComputedStyle(elt)) as typeof window.getComputedStyle;
+
+  // React Flow (@xyflow/react) measures with ResizeObserver, which jsdom omits.
+  // Minimal no-op stub keeps smoke tests deterministic (no layout geometry).
+  if (typeof (globalThis as { ResizeObserver?: unknown }).ResizeObserver === 'undefined') {
+    class ResizeObserverStub {
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
+  }
 }
